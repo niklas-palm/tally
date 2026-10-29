@@ -9,7 +9,7 @@ Security problems go privately, never in an issue: see [SECURITY.md](SECURITY.md
 The tests need no AWS. Running Tally end to end needs a deployment of your own ([README.md](README.md)).
 
 ```
-make test          # the pipeline's and the API's tests (Python 3.12 with uv), and that the shell scripts parse
+make test          # the pipeline's and the API's tests (Python 3.12 with uv, and ffmpeg), and that the shell scripts parse
 make app-test      # the Mac app's tests (macOS with the Command Line Tools)
 make windows-test  # the Windows app's Core tests (the .NET 10 SDK, any OS)
 ```
