@@ -46,21 +46,23 @@ cp config.example.json config.json
 
 `config.json` is gitignored.
 
-| Setting | What it is |
-|---|---|
-| `account`, `region` | Where the stack goes |
-| `stackName` | The stack's name |
-| `timezone` | For warm hours and the dashboard's "today" |
-| `domain` | Optional: `{name, hostedZoneId}`, the site's domain in Route 53 |
-| `auth` | Optional: your OIDC provider (below). Without it, the stack makes a Cognito user pool |
-| `bundleId` | The Mac app's bundle id. Keep it once people use the app: macOS ties permissions and the saved sign-in to it |
-| `modelId` | The Bedrock model, as a cross-region inference profile |
-| `modelPrices` | Dollars per million tokens, for the dashboard ("standard" rates for an `eu.` or `us.` profile, "global" for `global.`) |
-| `hfTokenSecret` | The Secrets Manager name of the Hugging Face token |
-| `sharedVoices` | Optional, off unless `true` (below) |
-| `crashEmail` | Optional: who gets an email when an app sends a crash report |
-| `gpu` | `instanceTypes` (single-GPU types Batch may launch), `maxVcpus`, and optional `warm` (below) |
-| `tags` | Optional: `{"key": "value"}` tags on everything, beside `project=tally` |
+Every setting is in the example. The optional ones are off there (`null`, `false` or `{}`); fill one in to use it.
+
+| Setting | Required | What it is |
+|---|---|---|
+| `account`, `region` | Yes | Where the stack goes |
+| `stackName` | Yes | The stack's name |
+| `timezone` | Yes | For warm hours and the dashboard's "today" |
+| `domain` | No | The site's own domain in Route 53, `{"name": "tally.example.com", "hostedZoneId": "Z0123456789ABCDEFGHIJ"}`. Without it, the site is at its CloudFront address |
+| `auth` | No | Your OIDC provider, `{"name", "issuer", "clientId", "adminClaim"}` (below). Without it, the stack makes a Cognito user pool |
+| `bundleId` | Yes | The Mac app's bundle id. Keep it once people use the app: macOS ties permissions and the saved sign-in to it |
+| `modelId` | Yes | The Bedrock model, as a cross-region inference profile |
+| `modelPrices` | Yes | Dollars per million tokens, for the dashboard ("standard" rates for an `eu.` or `us.` profile, "global" for `global.`) |
+| `hfTokenSecret` | Yes | The Secrets Manager name of the Hugging Face token |
+| `sharedVoices` | No | `true` to match voices across everyone in your deployment (below) |
+| `crashEmail` | No | Who gets an email when an app sends a crash report, `"you@example.com"` |
+| `gpu` | Yes | `instanceTypes` (single-GPU types Batch may launch) and `maxVcpus`; optional `warm` (below) |
+| `tags` | No | Tags on everything, beside `project=tally`, `{"team": "ops"}` |
 
 **Another region than eu-north-1:** change `region`, `modelId`'s prefix, `modelPrices`, `timezone` and `gpu.instanceTypes` (`aws ec2 describe-instance-type-offerings --region <region>` lists a region's types).
 

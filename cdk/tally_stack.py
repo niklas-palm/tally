@@ -259,7 +259,9 @@ class TallyStack(cdk.Stack):
         bucket = s3.Bucket(self, "Site", block_public_access=s3.BlockPublicAccess.BLOCK_ALL, enforce_ssl=True,
                            encryption=s3.BucketEncryption.S3_MANAGED, removal_policy=cdk.RemovalPolicy.RETAIN)
         distribution = cloudfront.Distribution(
-            self, "SiteDistribution", default_root_object="index.html", minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+            self, "SiteDistribution", default_root_object="index.html",
+            # TLS 1.2 or newer at the site's own domain; CloudFront's default certificate sets its own
+            minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021 if certificate else None,
             default_behavior=cloudfront.BehaviorOptions(origin=origins.S3BucketOrigin.with_origin_access_control(bucket),
                                                         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS),
             domain_names=[domain["name"]] if domain else None, certificate=certificate)
