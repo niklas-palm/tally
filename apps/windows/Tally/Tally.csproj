@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Windows app: WinUI 3, unpackaged and self-contained, so it installs per user with nothing else first
+       (docs/windows.md). Everything that isn't Windows lives in Tally.Core. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+    <RootNamespace>Tally</RootNamespace>
+    <AssemblyName>Tally</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Tally.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Assets\icon.svg is where Tally.ico and Tally.png are drawn from: kept with them, never loaded, so not installed -->
+    <Content Include="Assets\**" Exclude="Assets\icon.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tally.Core\Tally.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The parts of the Windows App SDK Tally uses, not its metapackage: that adds ONNX Runtime, DirectML and Search,
+         60 MB Tally never loads (measured: 282 MB installed with it, 219 without) -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.6.4" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <PackageReference Include="NAudio.Wasapi" Version="3.3.0" />
+    <PackageReference Include="NAudio.Core" Version="3.3.0" />
+  </ItemGroup>
+  <!-- tally.json beside the app: where it signs in and which API it talks to, from the deployed stack and the provider's
+       discovery document (`make windows-settings`, or settings.ps1 on Windows), as the Mac app's (docs/windows.md) -->
+  <PropertyGroup>
+    <TallySettings Condition="'$(TallySettings)' == ''">$(MSBuildProjectDirectory)\..\.build\tally.json</TallySettings>
+  </PropertyGroup>
+  <Target Name="TallySettings" BeforeTargets="Build">
+    <Error Condition="!Exists('$(TallySettings)')" Text="$(TallySettings) is missing: run `make windows-settings` (or apps\windows\settings.ps1) first." />
+  </Target>
+  <ItemGroup>
+    <None Include="$(TallySettings)" Link="tally.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

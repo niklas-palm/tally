@@ -1,0 +1,25 @@
+{
+  "meeting_id": "01M5J4E9F13K783X1XQ3D655FQ",
+  "sample": "council/2026-10-20-council.mp3",
+  "meta": {"started_at": "2026-10-20"},
+  "speakers": {
+    "S1": {"person": "Mayor Tarrian", "match": ["tarrian", "tarian", "tarion", "therrien", "patrick"], "evidence": "00:00:03 'I'm Mayor Patrick Tarrian for the RM of Springfield'; chairs"},
+    "S2": {"person": "Councillor Miller", "match": ["miller"], "evidence": "00:06:10 'Councillor Miller?' -> 'Thank you, Mr. Mayor. I would kind of echo what Councillor Kaczynski says'"},
+    "S3": {"person": "Councillor Kaczynski", "match": ["czynski", "kaczynski", "kuczynski"], "evidence": "00:04:50 and 00:20:04 called by name -> replies"},
+    "S4": {"person": "?CAO", "same_as": "CAO Colleen", "evidence": "never named; reads every resolution, answers as administration. same_as: the CAO of the other two meetings, for the voiceprint test only"},
+    "S5": {"person": "Councillor Warren", "match": ["warren"], "evidence": "00:09:04 'Councillor Warren.' -> 'Thank you, Mayor', defends the water plant"},
+    "S6": {"person": "Deputy Mayor Fuel", "match": ["fuel", "fuhl"], "evidence": "00:11:40 'Deputy Mayor.' -> lists the grants (medium confidence: two turns)"}
+  },
+  "summary": {
+    "includes": [
+      ["tender", "3303"],
+      ["3-2", "3–2", "3 to 2", "three to two", "opposed", "against", "split vote", "not unanimous"],
+      ["grow program", "manitoba grow", "grow application", "tri-school", "tri school", "4,123,800", "4.12 million", "4.1 million", "4123800"],
+      ["maintenance reserve", "reserve transfer", "64,352", "hazelridge", "79,064", "79,065", "recreation"],
+      ["catalyst", "17,710", "website"],
+      ["access credit", "signing authorit"]
+    ],
+    "max_words": 1200
+  },
+  "made_by": "a careful first pass over the prepared transcript (Claude, 2026-10-22), with timestamped evidence per speaker"
+}

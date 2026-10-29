@@ -1,0 +1,11 @@
+<Project>
+  <!-- Shared by every project: the Core and its tests build on any OS, the app on Windows only. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Company>Tally</Company>
+    <Product>Tally</Product>
+  </PropertyGroup>
+</Project>

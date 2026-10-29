@@ -1,0 +1,28 @@
+{
+  "account": "123456789012",
+  "region": "eu-north-1",
+  "stackName": "Tally",
+  "timezone": "Europe/Stockholm",
+  "bundleId": "com.example.tally",
+  "modelId": "eu.anthropic.claude-sonnet-5-5",
+  "modelPrices": {
+    "input": 2.2,
+    "output": 11,
+    "cache_read": 0.11,
+    "cache_write": 2.75
+  },
+  "hfTokenSecret": "tally/hf-token",
+  "crashEmail": "you@example.com",
+  "gpu": {
+    "instanceTypes": [
+      "g6.xlarge",
+      "g6.2xlarge",
+      "g6.4xlarge",
+      "g6.8xlarge",
+      "gr6.4xlarge",
+      "g6e.xlarge",
+      "g6e.2xlarge"
+    ],
+    "maxVcpus": 64
+  }
+}

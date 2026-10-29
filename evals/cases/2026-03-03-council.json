@@ -1,0 +1,26 @@
+{
+  "meeting_id": "01M5J4E97NMTFCSYR365RF1V1K",
+  "sample": "council/2026-03-03-council.mp3",
+  "meta": {"started_at": "2026-03-03"},
+  "speakers": {
+    "S1": {"person": "Mayor Tarrian", "match": ["tarian", "tarion", "tarrian", "therrien", "terrien", "patrick"], "evidence": "00:00:08 'I'm Mayor Patrick Tarian'; chairs the whole meeting"},
+    "S2": {"person": "Councillor Kaczynski", "match": ["kaczynski", "krasinski", "kuczynski", "kaczinski"], "evidence": "00:02:01 and 00:18:55 called on by name, answers"},
+    "S3": {"person": "Councillor Miller", "match": ["miller", "mark"], "evidence": "00:16:29 'Councillor Miller' -> 'Thank you, Mr. Mayor'; 00:44:51 'That's it, Mark?'; about 8% is the mayor (00:04:31)"},
+    "S4": {"person": "Deputy Mayor Fuel", "match": ["fuel"], "evidence": "answers 'Deputy Mayor?' at 00:04:56, 00:12:08, 00:39:02; roll call names Deputy Mayor Fuel"},
+    "S5": {"person": "Bob Schofield", "match": ["schofield", "bob"], "evidence": "00:08:17 'My name is Bob Schofield', Citizens on Patrol delegation"},
+    "S6": {"person": "CAO Colleen", "match": ["colleen", "coleen", "colene"], "evidence": "reads every resolution; 00:43:19 'If you can look into that, Colleen' -> replies"},
+    "S7": {"person": "Edwin Giesbrecht", "match": ["giesbrecht", "giesbeck", "giesbrect", "edwin"], "evidence": "00:26:04 'Edwin Giesbrecht, Springfield', election-integrity delegation"}
+  },
+  "summary": {
+    "includes": [
+      ["urfan", "senior election official", "senior election officer"],
+      ["2403"],
+      ["198"],
+      ["124"],
+      ["quarter page", "quarter-page", "433", "455"],
+      ["wristband", "1,000", "1000", "$1k"]
+    ],
+    "max_words": 1200
+  },
+  "made_by": "a careful first pass over the prepared transcript (Claude, 2026-10-22), with timestamped evidence per speaker"
+}

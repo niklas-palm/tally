@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Tally · Admin</title>
+<!-- The maintainer's dashboard: Tally's admins sign in as the app does (PKCE, the app's client),
+     and the API's GET /admin/stats checks the admin role. Counts and timings only: what meetings say never reaches
+     it. Plain HTML: `make site` fills in the sign-in endpoints, the client and the API (apps/mac/settings.sh). -->
+<style>
+  :root { --bg: #fbfbfd; --fg: #1d1d1f; --muted: #6e6e73; --line: #e5e5ea; --card: #fff; --accent: #e0383e; --good: #248a3d; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111113; --fg: #f5f5f7; --muted: #a1a1a6; --line: #2c2c2e; --card: #1c1c1e; --good: #30d158; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 24px 72px; }
+  header { display: flex; align-items: baseline; gap: 16px; }
+  h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0; }
+  h1 .dot { color: var(--accent); }
+  h2 { font-size: 20px; margin: 40px 0 12px; }
+  .muted { color: var(--muted); }
+  header .muted { flex: 1; }
+  button { font: 600 14px -apple-system, sans-serif; border: 1px solid var(--line); background: var(--card); color: var(--fg); border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card .label { color: var(--muted); font-size: 13px; }
+  .card .value { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .card .note { color: var(--muted); font-size: 13px; }
+  .bad { color: var(--accent); }
+  .good { color: var(--good); }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  #message { margin-top: 48px; font-size: 17px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><a href="./" style="color: inherit; text-decoration: none">Tally<span class="dot">.</span></a> Admin</h1>
+    <span class="muted" id="at"></span>
+    <button id="refresh" hidden>Refresh</button>
+  </header>
+  <p id="message" class="muted">Signing in…</p>
+  <div id="dashboard" hidden>
+    <div class="grid" id="cards"></div>
+    <h2>People</h2>
+    <p class="muted">Meetings recorded, by when they were recorded: today since midnight, in the deployment's time zone; the others back from now.</p>
+    <table><thead><tr><th>Name</th><th>Email</th><th class="n">Today</th><th class="n">3 days</th><th class="n">7 days</th><th class="n">30 days</th><th class="n">All</th><th>Last recording</th><th>Tally</th><th>App version</th></tr></thead>
+      <tbody id="people"></tbody></table>
+    <h2>Failures this week</h2>
+    <table><thead><tr><th>When</th><th>Who</th><th>Why</th></tr></thead><tbody id="failures"></tbody></table>
+    <h2>Cost this month</h2>
+    <table><thead><tr><th>Service</th><th class="n">So far</th></tr></thead><tbody id="cost"></tbody></table>
+    <p class="muted">From Cost Explorer, a day or so behind. The GPU by its instance types in @REGION@ (anything else in the account on those types counts too); the rest by its tag, <code>project=tally</code>. The agent's model by its tokens, at the prices in config.json.</p>
+  </div>
+</main>
+<script type="module">
+const AUTHORIZATION = "@AUTHORIZATION@", TOKEN = "@TOKEN@", CLIENT = "@CLIENT@", API = "@API@";
+const back = location.origin + location.pathname;
+const $ = id => document.getElementById(id);
+
+// Text into the page as text, never as HTML: names and errors come from people's accounts
+function el(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+function row(cells) { const tr = el("tr"); for (const [text, cls] of cells) tr.append(el("td", text, cls)); return tr; }
+
+const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+// Signed in at once, with no button: straight to the sign-in provider, which comes back at once when signed in there
+async function signIn() {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
+  sessionStorage.setItem("pkce", JSON.stringify({ verifier, state }));
+  const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  const query = new URLSearchParams({ client_id: CLIENT, response_type: "code", redirect_uri: back, scope: "openid",
+                                      code_challenge: challenge, code_challenge_method: "S256", state });
+  location.assign(`${AUTHORIZATION}?${query}`);
+}
+
+async function token() {
+  const query = new URLSearchParams(location.search);
+  if (query.has("code")) {
+    const { verifier, state } = JSON.parse(sessionStorage.getItem("pkce") || "{}");
+    history.replaceState(null, "", back);
+    if (query.get("state") !== state) return signIn();
+    const reply = await fetch(TOKEN, { method: "POST",
+      body: new URLSearchParams({ grant_type: "authorization_code", code: query.get("code"), redirect_uri: back, client_id: CLIENT, code_verifier: verifier }) });
+    if (!reply.ok) return signIn();
+    sessionStorage.removeItem("pkce");
+    return (await reply.json()).access_token;  // kept in memory only: a reload signs in again, at once
+  }
+  return signIn();
+}
+
+// Tokens in millions, and how much of the input came from the cache, which is billed at a tenth
+function cached(m) {
+  const input = m.input + m.cache_read + m.cache_write;
+  const millions = n => `${(n / 1e6).toFixed(1)}M`;
+  return input ? `${millions(input)} in, ${Math.round(100 * m.cache_read / input)}% cached · ${millions(m.output)} out` : "no runs yet";
+}
+
+function since(iso) {
+  if (!iso) return "—";
+  const minutes = (Date.now() - new Date(iso)) / 60000;
+  if (minutes < 2) return "just now";
+  if (minutes < 60) return `${Math.round(minutes)} min ago`;
+  if (minutes < 48 * 60) return `${Math.round(minutes / 60)} h ago`;
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+function card(label, value, note, cls) {
+  const c = el("div", null, "card");
+  c.append(el("div", label, "label"), el("div", value, "value" + (cls ? " " + cls : "")));
+  if (note) c.append(el("div", note, "note"));
+  return c;
+}
+
+async function show(access) {
+  const reply = await fetch(`${API}/admin/stats`, { headers: { authorization: `Bearer ${access}` } });
+  if (reply.status === 401) return signIn();
+  if (reply.status === 403) { $("message").textContent = "This page is for Tally's admins."; return; }
+  if (!reply.ok) { $("message").textContent = "Tally's figures couldn't be read. Try again in a moment."; return; }
+  const s = await reply.json();
+  // The latest of each app: a Mac reports the Mac's version, a PC the Windows app's
+  const latest = await Promise.all(["version.json", "windows.json"].map(async (file) => {
+    const reply = await fetch(file, { cache: "no-store" });
+    return reply.ok ? (await reply.json()).version : null;
+  }));
+
+  $("message").hidden = true; $("dashboard").hidden = false; $("refresh").hidden = false;
+  $("at").textContent = `as of ${new Date(s.at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+  const u = s.usage, t = s.turnaround, q = s.queue;
+  $("cards").replaceChildren(
+    card("Recorded today", u.recorded.today, `${u.recorded.three_days} in 3 days · ${u.recorded.week} in 7 · ${u.recorded.month} in 30 · ${u.recorded.all} in all`),
+    card("Summarised today", u.summarised.today, `${u.summarised.three_days} in 3 days · ${u.summarised.week} in 7 · ${u.summarised.month} in 30 · ${u.summarised.all} in all`),
+    card("Hours recorded", u.hours),
+    card("Failed this week", s.failed_week, null, s.failed_week ? "bad" : "good"),
+    card("Time to a summary", t.median == null ? "—" : `${Math.round(t.median)} min`,
+         t.median == null ? "no meetings in 30 days" : `typical, last 30 days · slowest ${Math.round(t.slowest)} min`),
+    card("GPU", q.warm ? "Warm" : "Cold", `${q.running} running · ${q.runnable + q.starting} waiting · ${q.vcpus} vCPUs`),
+    card("Crash reports this week", s.crashes_week, null, s.crashes_week ? "bad" : null),
+    card("Cost this month", `$${s.cost.total.toFixed(2)}`, "so far: see below"),
+    card("The model this month", `$${s.model.usd.toFixed(2)}`, `${s.model.runs} runs (${s.model.rewrites} rewrites) · ` +
+         `${s.model.runs ? `$${(s.model.usd / s.model.runs).toFixed(3)} a run · ` : ""}${cached(s.model)}`));
+
+  $("people").replaceChildren(...s.people.map(p => row([
+    [p.name], [p.email || "—", "muted"], ...["today", "three_days", "week", "month", "all"].map(k => [p.meetings[k], "n"]),
+    [since(p.last_recorded)],
+    // Their app syncs about every minute while it runs: that says whether Tally is open, not whether they use it
+    p.last_seen && Date.now() - new Date(p.last_seen) < 3 * 60000 ? ["Open", "good"] : [p.last_seen ? `open ${since(p.last_seen)}` : "never", "muted"],
+    [p.app_version || "—", p.app_version && !latest.includes(p.app_version) && p.app_version !== "repository build" ? "bad" : null]])));
+  $("failures").replaceChildren(...(s.failures.length ? s.failures.map(f => row([
+    [new Date(f.started_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })], [f.name], [f.error || "—", "muted"]]))
+    : [row([["None", "muted"], [""], [""]])]));
+  $("cost").replaceChildren(...s.cost.services.map(c => row([[c.service], [`$${c.usd.toFixed(2)}`, "n"]])));
+}
+
+const access = await token();
+$("refresh").onclick = async () => { try { await show(access); } catch { signIn(); } };
+if (access) await show(access);
+</script>
+</body>
+</html>

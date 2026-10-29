@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Tally: meeting notes that know who spoke</title>
+<meta name="description" content="Tally records a meeting on your Mac or PC and gives back a transcript with real speaker names, a summary and action items.">
+<!-- What Slack, Teams and the like show for a shared link -->
+<meta property="og:title" content="Tally: meeting notes that know who spoke">
+<meta property="og:description" content="Tally records a meeting on your Mac or PC and gives back a transcript with real speaker names, a summary and action items.">
+<meta property="og:image" content="@SITE@/share.png">
+<meta property="og:url" content="@SITE@/">
+<meta name="twitter:card" content="summary">
+<style>
+  :root {
+    --bg: #fbfbfd; --fg: #1d1d1f; --muted: #6e6e73; --line: #e5e5ea; --card: #fff;
+    --accent: #e0383e; --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111113; --fg: #f5f5f7; --muted: #a1a1a6; --line: #2c2c2e; --card: #1c1c1e; --code-bg: #000; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg); line-height: 1.55;
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 72px 24px 96px; }
+  h1 { font-size: 52px; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 12px; }
+  h1 .dot { color: var(--accent); }
+  .lede { font-size: 22px; color: var(--muted); margin: 0 0 40px; }
+  h2 { font-size: 28px; letter-spacing: -0.01em; margin: 64px 0 12px; }
+  h3 { font-size: 19px; margin: 32px 0 6px; }
+  a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  p, li { max-width: 68ch; }
+  ul, ol { padding-left: 1.3em; }
+  li + li { margin-top: 4px; }
+  code { font: 0.88em ui-monospace, "SF Mono", Menlo, monospace; background: var(--line); padding: 1px 5px; border-radius: 5px; }
+  pre { margin: 10px 0 16px; background: var(--code-bg); color: var(--code-fg); padding: 14px 16px; border-radius: 10px; overflow-x: auto; }
+  pre code { background: none; padding: 0; font-size: 14px; }
+  .install {
+    display: flex; align-items: center; gap: 12px; background: var(--code-bg); color: var(--code-fg);
+    border-radius: 14px; padding: 18px 18px 18px 22px; font: 16px ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .install code { flex: 1; background: none; padding: 0; font-size: inherit; overflow-x: auto; white-space: nowrap; }
+  .install code::before { content: "$ "; color: #8e8e93; }
+  .install.windows code::before { content: "> "; }
+  button {
+    font: 600 15px -apple-system, sans-serif; border: 0; border-radius: 9px; padding: 9px 16px; cursor: pointer;
+    background: var(--accent); color: #fff; white-space: nowrap;
+  }
+  .small { color: var(--muted); font-size: 15px; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 40px; margin: 14px 0; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--fg); color: var(--bg); font-size: 14px; font-weight: 600; text-align: center; line-height: 26px;
+  }
+  details { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 0 18px; margin: 10px 0; }
+  details[open] { padding-bottom: 6px; }
+  summary { cursor: pointer; font-weight: 600; padding: 14px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 28px 0 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .card b { display: block; margin-bottom: 4px; }
+  .card span { color: var(--muted); font-size: 15px; }
+  footer { margin-top: 72px; color: var(--muted); font-size: 14px; }
+  .operations { position: absolute; top: 20px; right: 24px; font: 600 14px -apple-system, sans-serif; text-decoration: none;
+                border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 14px; }
+</style>
+</head>
+<body>
+<!-- For admins: the dashboard checks the admin role itself, so anyone else who follows it is told it isn't for them. -->
+<a class="operations" href="admin.html">Operations</a>
+<main>
+
+<h1>Tally<span class="dot">.</span></h1>
+<p class="lede">Record a meeting on your Mac or PC. Get back a transcript with real speaker names, a summary and action items.</p>
+
+<section id="mac">
+<h3>On a Mac</h3>
+<div class="install">
+  <code>curl -fsSL @SITE@/install.sh | bash</code>
+  <button type="button">Copy</button>
+</div>
+<p class="small">Paste it into Terminal (in Applications → Utilities) and press Return. It needs macOS Tahoe (26) or later and your @SIGNIN@ account with access to Tally. After that, Tally keeps itself up to date: when there's a new version, its menu bar icon gets a dot, and <b>Update</b> in its menu installs it.</p>
+
+</section>
+
+<section id="windows">
+<h3>On Windows</h3>
+<div class="install windows">
+  <code>irm @SITE@/install.ps1 | iex</code>
+  <button type="button">Copy</button>
+</div>
+<p class="small">Paste it into Terminal or PowerShell (right-click Start → Terminal) and press Enter. It needs Windows 11 with Smart App Control off (Windows blocks apps built on the PC while it's on; it's in Windows Security → App &amp; browser control) and no app control from your organisation (AppLocker or App Control for Business, on some work PCs), and your @SIGNIN@ account with access to Tally. After that, Tally keeps itself up to date: when there's a new version, its icon by the clock gets a dot, and <b>Update</b> in its menu installs it.</p>
+
+</section>
+
+<div class="grid">
+  <div class="card"><b>Any meeting</b><span>Zoom, Teams, Meet, Chime, Slack, a browser, or people in the room.</span></div>
+  <div class="card"><b>Who said what</b><span>Confirm a voice once and Tally recognises it in later meetings.</span></div>
+  <div class="card"><b>Yours alone</b><span>Your meetings, people and voices belong to your account.</span></div>
+</div>
+
+<h2>What the command does</h2>
+<p>Tally isn't in an app store, so your computer builds it from source. That's why there are no "unknown publisher" warnings. On a Mac, the command:</p>
+<ol>
+  <li>Checks for macOS 26, and installs Apple's Command Line Tools if they're missing. They bring Swift, and macOS shows its own dialog for them.</li>
+  <li>Downloads Tally's source (under 1 MB) and checks it against the checksum in the script.</li>
+  <li>Creates a code-signing certificate called <b>Tally Local</b> in your login keychain, once. macOS keeps Tally's microphone and system-audio permissions from one version to the next because every build carries the same signature.</li>
+  <li>Builds Tally, in a minute or two, puts it in Applications and opens it.</li>
+</ol>
+<p class="small">Want to read the script first? <a href="install.sh">It's here.</a> It doesn't use sudo. Installing the Command Line Tools may ask for an administrator's password, and if your keychain is locked, macOS asks for your Mac password. It writes to Applications, your login keychain and <code>~/Library/Logs/Tally/install.log</code>.</p>
+<p>On Windows, the command:</p>
+<ol>
+  <li>Checks for Windows 11, and for Smart App Control or an organisation's app control, which would block Tally, and installs Microsoft's .NET SDK for you alone if it's missing (in your own folder, no administrator needed).</li>
+  <li>Downloads Tally's source (under 1 MB) and checks it against the checksum in the script.</li>
+  <li>Builds Tally, in a few minutes the first time, puts it in your own programs folder with a Start menu entry, and opens it. It's removed like any app, in Settings → Apps.</li>
+</ol>
+<p class="small">Want to read the script first? <a href="install.ps1">It's here.</a> It needs no administrator rights and writes only to your own folders, with its log in <code>%LOCALAPPDATA%\Tally\Logs\install.log</code>.</p>
+
+<h2>The first time</h2>
+<ol class="steps">
+  <li><b>Find Tally in the menu bar.</b> It's a <b>T.</b> at the top right of your screen, and a welcome window opens alongside it.</li>
+  <li><b>Sign in</b> with your @SIGNIN@ account. A sign-in sheet opens, and Tally keeps you signed in, so you'll rarely need to do it again.</li>
+  <li><b>Start a recording.</b> macOS asks twice: once for the microphone and once to record what your Mac plays (the other people on a call). Allow both.</li>
+  <li><b>Keychain:</b> after an install or update, macOS may ask whether Tally may use its saved sign-in. Enter your Mac password and choose <b>Always Allow</b>.</li>
+  <li><b>Stop the recording</b> when the meeting ends. Tally sends it, and a few minutes later the summary is ready. Allow notifications when asked, and Tally tells you.</li>
+  <li><b>Confirm who spoke</b> at the top of the meeting's page. Listen to a clip, then pick or name the person. Tally recognises that voice in later meetings.</li>
+</ol>
+<p><b>On Windows,</b> Tally is the <b>T.</b> by the clock (in the <b>^</b> overflow until you drag it beside the clock). Click it for its menu; it records your microphone and everything your PC plays, with no permissions to grant. Windows lets desktop apps use the microphone unless that's turned off in Settings → Privacy &amp; security → Microphone.</p>
+<p>You can record without signing in, or with no network. Recordings wait on your computer and are sent once you're signed in. Each one is deleted from your computer when its summary is ready. To have Tally start with your computer, tick <b>Open at login</b> in its menu.</p>
+
+<footer>Audio is processed in AWS, in @REGION@.</footer>
+</main>
+<script>
+  // Each computer's own command first
+  if (navigator.userAgent.includes("Windows")) document.getElementById("mac").before(document.getElementById("windows"));
+  for (const block of document.querySelectorAll(".install")) {
+    const button = block.querySelector("button");
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(block.querySelector("code").textContent);
+      button.textContent = "Copied";
+      setTimeout(() => (button.textContent = "Copy"), 1600);
+    });
+  }
+</script>
+</body>
+</html>

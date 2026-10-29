@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Tally.Core.Tests/Tally.Core.Tests.csproj" />
+  <Project Path="Tally.Core/Tally.Core.csproj" />
+  <Project Path="Tally/Tally.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

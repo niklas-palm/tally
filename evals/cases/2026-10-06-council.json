@@ -1,0 +1,25 @@
+{
+  "meeting_id": "01M5J4E9BA52BZ13CTNZ98WKGP",
+  "sample": "council/2026-10-06-council.mp3",
+  "meta": {"started_at": "2026-10-06"},
+  "speakers": {
+    "S1": {"person": "Mayor Tarrian", "match": ["tarrian", "tarian", "tarion", "terrian", "therrien", "patrick"], "evidence": "00:00:03 'I'm Mayor Patrick Tarrian calling the meeting to order'; chairs"},
+    "S2": {"person": "Councillor Miller", "match": ["miller"], "evidence": "called 'Councillor Miller' at 00:02:27, 00:32:26, 00:37:29 and replies each time"},
+    "S3": {"person": "CAO Colleen", "match": ["colleen"], "evidence": "reads every resolution and bylaw; 00:43:09 'Colleen, what do we have left' -> answers"},
+    "S4": {"person": "Councillor Kaczynski", "match": ["kaczynski", "kosinski", "kaczinski", "kazinski", "andy"], "evidence": "00:11:30 'Councillor Kosinski' and 00:21:54 'Councillor Kaczynski' -> replies; 00:22:43 'Also, Andy'"},
+    "S5": {"person": "Deputy Mayor Fuel", "match": ["fuel", "fuhl"], "evidence": "00:43:02 'Councillor Fuel' -> 'Yeah. I have two comments'; Ward 1 appropriation"},
+    "S6": {"person": "Humphrey Bernas", "match": ["bernas", "vernas", "humphrey"], "evidence": "00:39:03 'Humphrey, if you want to take five minutes' -> speaks for Cook's Creek"},
+    "S7": {"person": "Councillor Warren", "match": ["warren"], "evidence": "00:46:38 'Madam Councillor Warren, how would you feel?' -> answers"}
+  },
+  "summary": {
+    "includes": [
+      ["2610"],
+      ["2508"],
+      ["45 m", "45 metre", "45-metre", "45m", "45 meter", "45-meter"],
+      ["60,000", "60000", "60 000", "60k", "71,000", "71000", "71 000", "71k"],
+      ["non-profit", "nonprofit", "community grant", "13,548", "16,160"]
+    ],
+    "max_words": 1200
+  },
+  "made_by": "a careful first pass over the prepared transcript (Claude, 2026-10-22), with timestamped evidence per speaker"
+}
