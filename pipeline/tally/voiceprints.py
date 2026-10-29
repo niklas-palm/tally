@@ -18,7 +18,7 @@ from boto3.dynamodb.conditions import Key
 EMBEDDING_MODEL = "pyannote/speaker-diarization-community-1"
 DIMENSION = 256  # the model's embeddings
 TOP = 3  # people listed per speaker
-NO_MATCH = 0.5  # below it, a voice isn't a match at all (the prompt says so; measured in docs/research.md)
+NO_MATCH = 0.5  # below it, a voice isn't a match at all (the prompt says so; measured: different people scored at most 0.49)
 LINE = 100  # a name, role or company: one printable line of at most this many characters, as the API allows
 SHARED = "shared:"  # a person from the organisation's pool (config.json's sharedVoices), by their id there
 

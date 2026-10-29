@@ -46,7 +46,7 @@ struct Results: Decodable {
         let candidates: [Candidate]?  // the owner's people whose voices come closest, closest first
     }
 
-    /// A voice that sounds like this speaker's: cosine similarity, 0.65 or more is very close (measured in docs/research.md).
+    /// A voice that sounds like this speaker's: cosine similarity, 0.65 or more is very close (measured: the same person scored 0.81 to 0.96, different people at most 0.49).
     struct Candidate: Decodable, Identifiable {
         let personId: String
         let score: Double

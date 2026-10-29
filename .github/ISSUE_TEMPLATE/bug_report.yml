@@ -4,27 +4,14 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: |
-        Thanks for reporting it. For a security problem, don't use an issue: see SECURITY.md.
-        Never attach recordings, transcripts or anything from someone's meeting.
-  - type: dropdown
-    id: where
-    attributes:
-      label: Where
-      options: [The Mac app, The Windows app, The pipeline (transcript, speakers, summary), The API, Deploying (CDK, Makefile), The install page or dashboard, The docs]
-    validations:
-      required: true
+      value: For a security problem, see SECURITY.md instead. Never attach recordings, transcripts or anything from a meeting.
   - type: textarea
     id: what
     attributes:
       label: What happened, and what you expected
+      description: Which part (the Mac app, the Windows app, the pipeline, deploying), and how to make it happen.
     validations:
       required: true
-  - type: textarea
-    id: steps
-    attributes:
-      label: How to make it happen
-      placeholder: "1. …\n2. …"
   - type: input
     id: versions
     attributes:
@@ -34,5 +21,5 @@ body:
     id: logs
     attributes:
       label: Logs
-      description: The installer's log, the app's log, or the job's steps (they hold no meeting content). Remove anything that names your deployment.
+      description: The installer's or app's log, or the job's steps. Remove anything that names your deployment.
       render: text

@@ -259,7 +259,7 @@ public class AppModelTests : IDisposable
         Assert.Equal(RecordingState.Sent, model.Recordings[0].State);
     });
 
-    /// <summary>docs/macos.md, "After a crash or a quit".</summary>
+    /// <summary>After a crash or a quit, a recording is saved and sent as usual (docs/macos.md, "Recordings on the Mac").</summary>
     [Fact]
     public void After_a_crash_what_was_recorded_is_kept_and_a_cut_off_send_starts_again() => UiThread.Run(async () =>
     {

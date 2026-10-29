@@ -70,7 +70,7 @@ public partial class App : Application
         if (activation.Kind == ExtendedActivationKind.AppNotification && activation.Data is AppNotificationActivatedEventArgs clicked
             && clicked.Arguments.TryGetValue("meeting", out var meeting))
             OpenWindow(meeting);
-        // For screenshots (docs/windows.md): the flyout, open, as a click leaves it
+        // For screenshots: `Tally.exe --menu` shows the flyout, open, as a click leaves it
         else if (started.Contains("--menu")) flyout.Show(tray.Bounds);
         // Opened at login, Tally waits in the notification area; opened from Start, it shows its window
         else if (!started.Contains("--background") || !model.Welcomed) OpenWindow(null);

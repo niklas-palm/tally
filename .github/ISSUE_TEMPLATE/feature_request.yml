@@ -4,21 +4,10 @@ labels: [idea]
 body:
   - type: markdown
     attributes:
-      value: Tally is deliberately small. Say what you're trying to get done, and we'll talk about whether and how it fits.
+      value: Tally is deliberately small. Say what you're trying to get done, and we'll see whether it fits.
   - type: textarea
     id: need
     attributes:
-      label: What you're trying to do
-      description: The situation, and what gets in your way today.
+      label: What you're trying to do, and what Tally could do about it
     validations:
       required: true
-  - type: textarea
-    id: idea
-    attributes:
-      label: What you'd like Tally to do
-  - type: dropdown
-    id: apps
-    attributes:
-      label: Which app
-      description: The Mac and Windows apps do the same things (docs/parity.md).
-      options: [Both, The Mac app, The Windows app, Neither (the pipeline, API or deployment)]

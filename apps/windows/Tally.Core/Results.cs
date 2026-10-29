@@ -85,7 +85,7 @@ public sealed record Attendee(string Speaker, string Role, string Contribution);
 /// <param name="Candidates">The owner's people whose voices come closest, closest first.</param>
 public sealed record Speaker(double TalkTime, IReadOnlyList<Uri>? ClipUrls = null, Identity? Identity = null, IReadOnlyList<Candidate>? Candidates = null);
 
-/// <summary>A voice that sounds like this speaker's: cosine similarity, 0.65 or more is very close (measured in docs/research.md).</summary>
+/// <summary>A voice that sounds like this speaker's: cosine similarity, 0.65 or more is very close (measured: the same person scored 0.81 to 0.96, different people at most 0.49).</summary>
 public sealed record Candidate(string PersonId, double Score)
 {
     public string? Closeness => Score >= 0.65 ? "Very close" : Score >= 0.5 ? "Close" : Score >= 0.35 ? "A little alike" : null;

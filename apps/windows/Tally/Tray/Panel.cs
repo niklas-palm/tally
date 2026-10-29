@@ -44,7 +44,7 @@ internal sealed class Panel : Window
         var round = Native.DWMWCP_ROUND;
         Native.DwmSetWindowAttribute(hwnd, Native.DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
         // a screen share shows no sign of Tally: Windows leaves the window out of every capture, except
-        // for screenshots of Tally itself (docs/windows.md)
+        // for screenshots of Tally itself, with TALLY_SHOW_IN_CAPTURES=1
         if (Environment.GetEnvironmentVariable("TALLY_SHOW_IN_CAPTURES") != "1") Native.SetWindowDisplayAffinity(hwnd, Native.WDA_EXCLUDEFROMCAPTURE);
 
         Activated += (_, e) =>
