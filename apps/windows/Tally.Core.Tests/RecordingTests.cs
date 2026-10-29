@@ -59,7 +59,8 @@ public class RecordingTests
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "settings.json");
         Directory.CreateDirectory(path);  // in the way: the move over it fails
-        Assert.ThrowsAny<IOException>(() => Disk.Write(path, [1, 2, 3]));
+        var failed = Record.Exception(() => Disk.Write(path, [1, 2, 3]));
+        Assert.True(failed is IOException or UnauthorizedAccessException, failed?.GetType().Name);  // Windows says access denied
         Assert.Empty(Directory.GetFiles(temp.Path));
     }
 
