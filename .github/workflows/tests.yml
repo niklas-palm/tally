@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg  # a test cuts a clip, as the job does
       - run: cp config.example.json config.json  # the Makefile reads it; the tests don't touch AWS
       - run: make test
 
@@ -27,7 +28,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4
         with:
           global-json-file: apps/windows/global.json
-      - run: dotnet test --project apps/windows/Tally.Core.Tests
+      - run: dotnet test --project Tally.Core.Tests  # from apps/windows, whose global.json picks the test runner
+        working-directory: apps/windows
       - name: The PowerShell scripts parse
         shell: pwsh
         run: |
