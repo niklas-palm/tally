@@ -54,7 +54,7 @@ Every setting is in the example. The optional ones are off there (`null`, `false
 | `stackName` | Yes | The stack's name |
 | `timezone` | Yes | For warm hours and the dashboard's "today" |
 | `domain` | No | The site's own domain in Route 53, `{"name": "tally.example.com", "hostedZoneId": "Z0123456789ABCDEFGHIJ"}`. Without it, the site is at its CloudFront address |
-| `auth` | No | Your OIDC provider, `{"name", "issuer", "clientId", "adminClaim"}` (below). Without it, the stack makes a Cognito user pool |
+| `auth` | No | Your OIDC provider, an object (below). Without it, the stack makes a Cognito user pool |
 | `bundleId` | Yes | The Mac app's bundle id. Keep it once people use the app: macOS ties permissions and the saved sign-in to it |
 | `modelId` | Yes | The Bedrock model, as a cross-region inference profile |
 | `modelPrices` | Yes | Dollars per million tokens, for the dashboard ("standard" rates for an `eu.` or `us.` profile, "global" for `global.`) |
@@ -70,7 +70,16 @@ Every setting is in the example. The optional ones are off there (`null`, `false
 
 **`sharedVoices`** also suggests matches among the people everyone else in your deployment has named. It shares biometric data of people who never used Tally: be sure you have a legal basis (in the EU, GDPR) and that your users know.
 
-**Your own OIDC provider:** set `auth` to `name` (as in "Sign In to `<name>`"), `issuer`, `clientId` and `adminClaim`, the dotted path of the claim listing a person's roles (`resource_access.tally.roles` in Keycloak); `admin` there opens the dashboard. The client must be public, with authorization code and PKCE S256, redirects to `tally://callback` and `https://<site>/admin.html`, and the web origin `https://<site>`. Access tokens must have the client as `aud`, and a `sub` of letters, digits, `-` and `_`.
+**Your own OIDC provider:** set `auth` to an object like this, here for Keycloak:
+```json
+"auth": {
+  "name": "Example",
+  "issuer": "https://auth.example.com/realms/example",
+  "clientId": "tally",
+  "adminClaim": "resource_access.tally.roles"
+}
+```
+`name` is what people know it by ("Sign In to Example"), and `adminClaim` the dotted path of the claim that lists a person's roles: `admin` there opens the dashboard. The client must be public, with authorization code and PKCE S256, redirects to `tally://callback` and `https://<site>/admin.html`, and the web origin `https://<site>`. Access tokens must have the client as `aud`, and a `sub` of letters, digits, `-` and `_`.
 
 ## Deploy
 
