@@ -395,3 +395,15 @@ private func run(_ rules: inout CallRules, _ users: [AudioUser], for seconds: In
     #expect(summary.contains("**Participants:** Ada Lovelace (CFO, Acme), Speaker 2") && !summary.contains("Speaker 3"))
     #expect(!Markdown.transcript(results, names).contains("Lunch?"))
 }
+
+/// The transcript is one row a paragraph, each with its own id, a lazy stack's needs to draw and scroll it; a
+/// background voice's lines fold into one row where they come, and are rows of their own once shown.
+@Test func theTranscriptIsOneRowAParagraphWithBackgroundLinesFolded() {
+    let paragraphs: [Results.Paragraph] = [("S1", 0, "Hi."), ("S3", 2, "Lunch!"), ("S3", 3, "Upstairs."), ("S2", 5, "Hello."), ("S1", 7, "Shall we?")]
+    let folded = TranscriptPage.rows(paragraphs, background: { $0 == "S3" }, folded: true)
+    #expect(folded.map(\.id) == [0, 1, 3, 4] && folded.map(\.lines.count) == [1, 2, 1, 1] && folded.map(\.folded) == [false, true, false, false])
+    let shown = TranscriptPage.rows(paragraphs, background: { $0 == "S3" }, folded: false)
+    #expect(shown.map(\.id) == [0, 1, 2, 3, 4] && shown.allSatisfy { $0.lines.count == 1 && !$0.folded } && shown[1].background)
+    let long = TranscriptPage.rows((0..<500).map { ("S\($0 % 3)", Double($0), "line") }, background: { _ in false }, folded: true)
+    #expect(Set(long.map(\.id)).count == 500)
+}
