@@ -15,7 +15,7 @@ It runs in your own AWS account, for a person or a small team comfortable with A
 
 **Cost:** about $0.16 of GPU for an hour-long meeting, scaling to zero between meetings, plus the model's tokens ([Costs](#costs)).
 
-**Privacy:** recordings, transcripts and voiceprints stay in your AWS account; a model on Amazon Bedrock writes the summary. Tell people you're recording: in many places the law requires it.
+**Privacy:** recordings, transcripts and voiceprints stay in your AWS account; a model on Amazon Bedrock writes the summary. Tell people you're recording: in many places the law requires it. The voiceprints Tally keeps to recognise speakers are biometric data, which in the EU (GDPR) and elsewhere usually needs each person's explicit consent: check the laws where you use it.
 
 To set up your own Tally:
 
