@@ -77,6 +77,7 @@ make install       # this Mac
 
 - **Never install, restart or quit Tally while it's recording**, which cuts it short (`make install` and `install.ps1` refuse).
 - **Never delete data:** meetings, people, voiceprints, tables, buckets or site files.
+- **Change a deployment only through its own stack.** Two deployments in one account have resources with the same construct ids (`JobB9D00F9F-…`), so deregistering, deleting or editing one by hand can hit the other's. Remove a test deployment with `cdk destroy` of its own stack.
 - **Read `cdk diff` before `make deploy`.** It must not replace or remove the data bucket, the tables, the KMS key, the API or its authorizer. Keep construct ids: a changed id replaces the resource.
 - **With warm hours, a deploy that changes the GPU launch template or compute environment resets its minimum to 0.** In warm hours, set it back:
   ```

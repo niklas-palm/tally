@@ -172,6 +172,7 @@ class TallyStack(cdk.Stack):
         log_group = logs.LogGroup(self, "JobLogs", retention=logs.RetentionDays.ONE_MONTH)
         job = batch.EcsJobDefinition(
             self, "Job", timeout=cdk.Duration.hours(2), retry_attempts=3,
+            propagate_tags=True,  # its project tag onto the tasks it runs, so they're counted as Tally's
             # retried only when its instance went away under it
             retry_strategies=[batch.RetryStrategy.of(batch.Action.RETRY, batch.Reason.SPOT_INSTANCE_RECLAIMED),
                               batch.RetryStrategy.of(batch.Action.EXIT, batch.Reason.custom(on_reason="*"))],
