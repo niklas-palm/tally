@@ -939,7 +939,7 @@ struct Editable: View {
     }
 }
 
-private struct TranscriptPage: View {
+struct TranscriptPage: View {
     @Environment(AppModel.self) private var model
     let meeting: String
     let results: Results
@@ -947,27 +947,28 @@ private struct TranscriptPage: View {
     private let showing = State(initialValue: false)  // the background voices' lines, folded away until asked for
 
     var body: some View {
-        // A background voice's lines fold into one row where they come; shown, they're there in grey
-        let parts = Self.parts(results.paragraphs, background: { names.review($0) == .background })
+        // A background voice's lines fold into one row where they come; shown, they're there in grey. One view a
+        // row, with a stable id: a lazy stack whose rows yield a varying number of views can't measure them, and
+        // draws only the first, its scroll bar guessing and jumping back.
+        let rows = Self.rows(results.paragraphs, background: { names.review($0) == .background }, folded: !showing.wrappedValue)
         LazyVStack(alignment: .leading, spacing: 16) {
-            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                if part.background, !showing.wrappedValue {
+            ForEach(rows) { row in
+                if row.folded {
                     Button { showing.wrappedValue = true } label: {
-                        Label(part.lines.count == 1 ? "1 line of a background voice · Show" : "\(part.lines.count) lines of background voices · Show",
+                        Label(row.lines.count == 1 ? "1 line of a background voice · Show" : "\(row.lines.count) lines of background voices · Show",
                               systemImage: "speaker.wave.1")
                     }
                     .buttonStyle(.borderless).font(.callout).foregroundStyle(.secondary)
                 } else {
-                    ForEach(Array(part.lines.enumerated()), id: \.offset) { _, paragraph in
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("\(Text(names.name(paragraph.speaker)).bold())\(part.background ? " · background" : "")  \(Text(clock(paragraph.start)).font(.caption).foregroundStyle(.secondary))")
-                            Text(paragraph.text).fixedSize(horizontal: false, vertical: true)
-                        }
-                        .foregroundStyle(part.background ? .secondary : .primary)
-                        .contextMenu {
-                            if part.background {
-                                Button("Not a Background Voice…") { model.assigning = AssignForm(meeting: meeting, speaker: paragraph.speaker) }
-                            }
+                    let paragraph = row.lines[0]
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("\(Text(names.name(paragraph.speaker)).bold())\(row.background ? " · background" : "")  \(Text(clock(paragraph.start)).font(.caption).foregroundStyle(.secondary))")
+                        Text(paragraph.text).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundStyle(row.background ? .secondary : .primary)
+                    .contextMenu {
+                        if row.background {
+                            Button("Not a Background Voice…") { model.assigning = AssignForm(meeting: meeting, speaker: paragraph.speaker) }
                         }
                     }
                 }
@@ -976,14 +977,26 @@ private struct TranscriptPage: View {
         .textSelection(.enabled)
     }
 
-    /// The paragraphs in runs: a background voice's consecutive lines together, everyone else's one by one.
-    static func parts(_ paragraphs: [Results.Paragraph], background: (String) -> Bool) -> [(background: Bool, lines: [Results.Paragraph])] {
-        var parts: [(background: Bool, lines: [Results.Paragraph])] = []
-        for paragraph in paragraphs {
+    /// One row of the transcript: a paragraph, or (folded) a background voice's consecutive lines. Its id is its
+    /// first paragraph's place in the meeting.
+    struct Row: Identifiable {
+        let id: Int
+        var lines: [Results.Paragraph]
+        let background: Bool
+        let folded: Bool
+    }
+
+    static func rows(_ paragraphs: [Results.Paragraph], background: (String) -> Bool, folded: Bool) -> [Row] {
+        var rows: [Row] = []
+        for (index, paragraph) in paragraphs.enumerated() {
             let set = background(paragraph.speaker)
-            if set, parts.last?.background == true { parts[parts.count - 1].lines.append(paragraph) } else { parts.append((set, [paragraph])) }
+            if set, folded, rows.last?.folded == true {
+                rows[rows.count - 1].lines.append(paragraph)
+            } else {
+                rows.append(Row(id: index, lines: [paragraph], background: set, folded: set && folded))
+            }
         }
-        return parts
+        return rows
     }
 }
 
