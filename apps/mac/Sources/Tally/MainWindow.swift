@@ -33,6 +33,9 @@ struct MainWindow: View {
                 }
             }
             .navigationSplitViewColumnWidth(min: 380, ideal: 600)
+            // In the detail column, not over the whole split view: the columns run up under the toolbar, so an inset on
+            // the split view would cover the sidebar's and the list's first rows rather than move them down
+            .safeAreaInset(edge: .top) { banner }
             // Over what's shown, and only about it: as in Mail, the toolbar above each column acts on that column
             .toolbar {
                 ToolbarSpacer(.flexible)  // at the far end, by the search field, apart from Record over the list
@@ -54,7 +57,6 @@ struct MainWindow: View {
         }
         .navigationTitle(placeTitle)
         .navigationSubtitle(placeCount)
-        .safeAreaInset(edge: .top) { banner }
         .confirmationDialog(deleteTitle, isPresented: Binding(get: { model.deleting != nil }, set: { if !$0 { model.deleting = nil } }),
                             presenting: model.deleting) { item in
             Button("Delete", role: .destructive) { Task { await model.delete(item) } }
