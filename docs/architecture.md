@@ -69,6 +69,7 @@ The summary refers to speakers by id (`{S2}`), never by name, and the app fills 
 - **Naming a speaker in the app** saves a `user` voiceprint from that speaker's centroid.
 - **The pipeline saves an `auto` voiceprint** only at `high` confidence, on at least two kinds of evidence, with at least 30 s of clean speech.
 - **The app asks "Is this Alex?"** until the owner confirms, unless the person's voice is already confirmed.
+- **Shared voices** (`sharedVoices`) add colleagues' people to the matching as a pool, grouped by name: one entry a name, with the voiceprints of every colleague's person of that name. Names the owner already has are left out, so their own person always wins. Only a matched entry's name reaches the agent, never a colleague's role or company, and naming it finds or makes the owner's own person by that name. So two colleagues' different "Johan"s share an entry and come out as "Johan", right for either, and one person under two spellings shows as two candidates for one voice.
 
 ## Cloud
 
