@@ -49,6 +49,17 @@ def test_the_shared_pool_is_everyone_elses_named_people_with_confirmed_voices():
     assert [v["voiceprint_id"] for v in pool[0]["voiceprints"]] == ["v1", "v2"]
 
 
+def test_a_voice_lists_the_five_people_closest():
+    voice = np.zeros(256, dtype=np.float32)
+    voice[0] = 1
+    def person(n):  # a little further from the voice for each n
+        v = np.zeros(256, dtype=np.float32)
+        v[0], v[n] = 1, n / 10
+        return {"person_id": f"p_{n}", "name": f"P{n}", "voiceprints": [{"model": EMBEDDING_MODEL, "embedding": (v / np.linalg.norm(v)).tolist(), "source": "user"}]}
+    listed = match(voice, [person(n) for n in range(1, 8)])
+    assert [m["person_id"] for m in listed] == ["p_1", "p_2", "p_3", "p_4", "p_5"]
+
+
 def test_a_colleagues_person_is_listed_only_on_a_real_match():
     voice = np.zeros(256, dtype=np.float32)
     voice[0] = 1

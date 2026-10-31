@@ -90,7 +90,7 @@ The version ends in a hash of the settings. An archive is never changed once wri
 - `identity` is `null` until named, or `{"unknown": true, "reason": "...", "by": "agent"}`. It may have `role` and `company`. Its `person_id` is `null` for a new person until publish.
 - Evidence kinds: `voiceprint`, `introduction`, `address`, `role`, `elimination`, `other`.
 - `mic_ratio_db` is `null` unless the recording is `stereo-split`.
-- `matches`: the three people closest in voice, with their best score and voiceprints' sources.
+- `matches`: the five people closest in voice, with their best score and voiceprints' sources.
 
 `people.json`:
 ```json
