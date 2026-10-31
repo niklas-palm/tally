@@ -307,13 +307,15 @@ class TallyStack(cdk.Stack):
     def warm_hours(self, compute: batch.ManagedEc2EcsComputeEnvironment, warm: dict, timezone: str) -> None:
         """One GPU instance warm in the day, none at night: EventBridge Scheduler calls Batch itself, at
         the start and the end of config.json's warm hours, in its time zone (so summer time takes care of itself), on
-        its warm days (every day, unless `days` names some, as `MON-FRI`)."""
+        its warm days (every day, unless `days` names some, as `MON-FRI`). It goes cold every day, so a GPU warmed by
+        hand on another day, or warm hours past midnight, end as they should."""
         role = iam.Role(self, "WarmHoursRole", assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
                         description="Sets the GPU environment's minimum, morning and night")
         role.add_to_policy(iam.PolicyStatement(actions=["batch:UpdateComputeEnvironment"], resources=[compute.compute_environment_arn]))
-        for name, hour, minimum in (("WarmFrom", warm["from"], warm["vcpus"]), ("WarmUntil", warm["to"], 0)):
+        warm_from = ("WarmFrom", warm["from"], warm["vcpus"], warm.get("days", "*"))
+        for name, hour, minimum, days in (warm_from, ("WarmUntil", warm["to"], 0, "*")):
             scheduler.CfnSchedule(
-                self, name, schedule_expression=f"cron(0 {hour} ? * {warm.get('days', '*')} *)", schedule_expression_timezone=timezone,
+                self, name, schedule_expression=f"cron(0 {hour} ? * {days} *)", schedule_expression_timezone=timezone,
                 flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(mode="OFF"),
                 target=scheduler.CfnSchedule.TargetProperty(
                     arn="arn:aws:scheduler:::aws-sdk:batch:updateComputeEnvironment", role_arn=role.role_arn,
