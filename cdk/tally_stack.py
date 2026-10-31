@@ -237,6 +237,8 @@ class TallyStack(cdk.Stack):
             "Keycloak", issuer, jwt_audience=[client_id]),
             cors_preflight=apigw.CorsPreflightOptions(allow_origins=[site_url], allow_methods=[apigw.CorsHttpMethod.GET],
                                                       allow_headers=["authorization"], max_age=cdk.Duration.hours(1)))
+        # Every route, for everyone together: a guess well above what the apps' polling needs, to raise if it's ever met
+        api.default_stage.node.default_child.add_property_override("DefaultRouteSettings", {"ThrottlingRateLimit": 100, "ThrottlingBurstLimit": 200})
         integration = integrations.HttpLambdaIntegration("Function", function)
         for route in ("GET /meetings", "PUT /meetings/{id}", "POST /meetings/{id}/uploaded", "GET /meetings/{id}", "DELETE /meetings/{id}",
                       "PUT /meetings/{id}/speakers/{speaker}", "PUT /meetings/{id}/summary", "DELETE /meetings/{id}/summary", "POST /meetings/{id}/summary/rewrite", "GET /people", "PATCH /people/{id}", "DELETE /people/{id}",
@@ -259,12 +261,23 @@ class TallyStack(cdk.Stack):
         CloudFront reads, at the domain when there is one, else at CloudFront's own name. `make publish-site` fills it."""
         bucket = s3.Bucket(self, "Site", block_public_access=s3.BlockPublicAccess.BLOCK_ALL, enforce_ssl=True,
                            encryption=s3.BucketEncryption.S3_MANAGED, removal_policy=cdk.RemovalPolicy.RETAIN)
+        # The pages run only their own scripts and can't be framed. They call the sign-in provider and the API, which
+        # are known only after the site is (each needs the site's address), so any https address may be called.
+        policy = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                  "connect-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; object-src 'none'")
+        headers = cloudfront.ResponseHeadersPolicy(self, "SiteHeaders", security_headers_behavior=cloudfront.ResponseSecurityHeadersBehavior(
+            content_security_policy=cloudfront.ResponseHeadersContentSecurityPolicy(content_security_policy=policy, override=True),
+            frame_options=cloudfront.ResponseHeadersFrameOptions(frame_option=cloudfront.HeadersFrameOption.DENY, override=True),
+            content_type_options=cloudfront.ResponseHeadersContentTypeOptions(override=True),
+            referrer_policy=cloudfront.ResponseHeadersReferrerPolicy(referrer_policy=cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override=True),
+            strict_transport_security=cloudfront.ResponseHeadersStrictTransportSecurity(access_control_max_age=cdk.Duration.days(730), override=True)))
         distribution = cloudfront.Distribution(
             self, "SiteDistribution", default_root_object="index.html",
             # TLS 1.2 or newer at the site's own domain; CloudFront's default certificate sets its own
             minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021 if certificate else None,
             default_behavior=cloudfront.BehaviorOptions(origin=origins.S3BucketOrigin.with_origin_access_control(bucket),
-                                                        viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS),
+                                                        viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                                                        response_headers_policy=headers),
             domain_names=[domain["name"]] if domain else None, certificate=certificate)
         if not domain:
             return bucket, distribution, f"https://{distribution.distribution_domain_name}"
