@@ -237,8 +237,6 @@ class TallyStack(cdk.Stack):
             "Keycloak", issuer, jwt_audience=[client_id]),
             cors_preflight=apigw.CorsPreflightOptions(allow_origins=[site_url], allow_methods=[apigw.CorsHttpMethod.GET],
                                                       allow_headers=["authorization"], max_age=cdk.Duration.hours(1)))
-        # Every route, for everyone together: a guess well above what the apps' polling needs, to raise if it's ever met
-        api.default_stage.node.default_child.add_property_override("DefaultRouteSettings", {"ThrottlingRateLimit": 100, "ThrottlingBurstLimit": 200})
         integration = integrations.HttpLambdaIntegration("Function", function)
         for route in ("GET /meetings", "PUT /meetings/{id}", "POST /meetings/{id}/uploaded", "GET /meetings/{id}", "DELETE /meetings/{id}",
                       "PUT /meetings/{id}/speakers/{speaker}", "PUT /meetings/{id}/summary", "DELETE /meetings/{id}/summary", "POST /meetings/{id}/summary/rewrite", "GET /people", "PATCH /people/{id}", "DELETE /people/{id}",
