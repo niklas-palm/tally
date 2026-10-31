@@ -101,7 +101,8 @@ def publish(root: Path, meeting_id: str, meta: dict, store: Store) -> dict:
         if not new:  # someone known: what this meeting says they do fills only what's still empty
             store.fill_person(identity["person_id"], identity.get("role"), identity.get("company"))
         identity["suggestion"] = bool(pooled) or suggestion(identity["person_id"], known)  # a pooled voice: theirs to confirm
-        if speaker in embeddings and sound(embeddings[speaker]) and may_save_voiceprint(s):
+        # A colleague's naming is the owner's to confirm: an `auto` voiceprint from it would spread a mistake
+        if not pooled and speaker in embeddings and sound(embeddings[speaker]) and may_save_voiceprint(s):
             end = max(t["end"] for t in turns if t["speaker"] == speaker)
             store.put_voiceprint(identity["person_id"], f"v_{ulid()}", embeddings[speaker], "auto", meeting_id, speaker, s["first_seen"], end, s["clean_speech"])
             saved.append(speaker)

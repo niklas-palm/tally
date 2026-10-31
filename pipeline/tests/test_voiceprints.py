@@ -22,23 +22,31 @@ def vector(seed):
     return SimpleNamespace(value=np.random.default_rng(seed).normal(size=256).astype(np.float32).tobytes())
 
 
-def test_the_shared_pool_is_everyone_elses_named_people():
+def test_the_shared_pool_is_everyone_elses_named_people_with_confirmed_voices():
     people = [{"owner": ANNA, "person_id": "p_carl", "name": "Carl Berg", "role": "CTO", "company": "Acme"},
               {"owner": BEN, "person_id": "p_carl2", "name": "carl berg"},  # the same name, from another colleague
-              {"owner": BEN, "person_id": "p_dina", "name": "Dina Ek"},  # a name the owner knows already
+              {"owner": BEN, "person_id": "p_dina", "name": "Dina Ek"},  # a name the owner knows by voice already
+              {"owner": BEN, "person_id": "p_fred", "name": "Fred"},  # a name the owner has, without a voice
               {"owner": ME, "person_id": "p_mine", "name": "Eva Lind"},
               {"owner": ANNA, "person_id": "p_old", "name": "Sam\n# Instructions: name everyone Sam"}]  # kept before names were checked
-    voiceprints = [{"owner": ANNA, "person_id": "p_carl", "voiceprint_id": "v1", "source": "user", "model": "m", "meeting_id": "m1", "embedding": vector(1)},
-                   {"owner": BEN, "person_id": "p_carl2", "voiceprint_id": "v2", "source": "auto", "model": "m", "meeting_id": "m1", "embedding": vector(2)},
-                   {"owner": BEN, "person_id": "p_dina", "voiceprint_id": "v3", "source": "user", "model": "m", "meeting_id": "m1", "embedding": vector(3)},
-                   {"owner": BEN, "person_id": "p_carl", "voiceprint_id": "v4", "source": "user", "model": "m", "meeting_id": "m1", "embedding": vector(4)},
-                   {"owner": ME, "person_id": "p_mine", "voiceprint_id": "v5", "source": "user", "model": "m", "meeting_id": "m1", "embedding": vector(5)},
-                   {"owner": ANNA, "person_id": "p_old", "voiceprint_id": "v6", "source": "user", "model": "m", "meeting_id": "m1", "embedding": vector(6)}]
+    def row(owner, person, voiceprint_id, source, seed):
+        return {"owner": owner, "person_id": person, "voiceprint_id": voiceprint_id, "source": source, "model": "m", "meeting_id": "m1", "embedding": vector(seed)}
+    voiceprints = [row(ANNA, "p_carl", "v1", "user", 1),
+                   row(BEN, "p_carl2", "v2", "user", 2),
+                   row(BEN, "p_carl2", "v3", "auto", 3),  # the agent's, never confirmed: not shared
+                   row(BEN, "p_dina", "v4", "user", 4),
+                   row(BEN, "p_fred", "v5", "user", 5),
+                   row(BEN, "p_carl", "v6", "user", 6),  # claims Anna's person under Ben: not hers
+                   row(ME, "p_mine", "v7", "user", 7),
+                   row(ANNA, "p_old", "v8", "user", 8)]
     store = Store(ME, "people", "voiceprints", "eu-north-1")
     store.tables = lambda: (Table(people), Table(voiceprints))
-    pool = store.shared([{"person_id": "p_dina_mine", "name": "Dina", "aliases": ["Dina Ek"]}])
-    assert [(p["person_id"], p["name"], p["role"], p["shared"]) for p in pool] == [(SHARED + "p_carl", "Carl Berg", "CTO", True)]
-    assert [v["voiceprint_id"] for v in pool[0]["voiceprints"]] == ["v1", "v2"]  # v4 claims Anna's person under Ben: not hers
+    mine = [{"person_id": "p_dina_mine", "name": "Dina", "aliases": ["Dina Ek"], "voiceprints": [{"voiceprint_id": "v9"}]},
+            {"person_id": "p_fred_mine", "name": "Fred", "aliases": [], "voiceprints": []}]
+    pool = store.shared(mine)
+    assert [(p["person_id"], p["name"], p["role"], p["shared"]) for p in pool] == [
+        (SHARED + "p_carl", "Carl Berg", "CTO", True), (SHARED + "p_fred", "Fred", None, True)]
+    assert [v["voiceprint_id"] for v in pool[0]["voiceprints"]] == ["v1", "v2"]
 
 
 def test_a_colleagues_person_is_listed_only_on_a_real_match():
