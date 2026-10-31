@@ -11,14 +11,14 @@ The contract between the apps and the cloud: an API Gateway HTTP API (the stack'
 
 ## Routes
 
-Bodies and replies are JSON with snake_case keys. Errors are `{"error": "..."}`, with 400 (a bad request), 401, 403 (not an admin, or a bad user id), 404 (not there, or not the caller's), 409 (a conflict: sent already, not ready, changed meanwhile) or 500.
+Bodies and replies are JSON with snake_case keys. Errors are `{"error": "..."}`, with 400 (a bad request), 401, 403 (not an admin, or a bad user id), 404 (not there, or not the caller's), 409 (a conflict: sent already, not ready, changed meanwhile), 429 (too many on their way) or 500.
 
 Every request carries `X-Tally-Version`, and `GET /meetings` records it in the `users` table with the token's name and email. Meeting ids are ULIDs made by the app. A person's name, role and company are one line of at most 100 characters, because they reach the agent's prompt.
 
 | Route | What it does |
 |---|---|
 | `GET /meetings` | `{meetings: [{meeting_id, state, title, started_at, ended_at, duration, language, error, updated_at, edited_at, rewriting, rewrite_error, people, folder_ids}]}`, newest first. `edited_at` is the owner's last change |
-| `PUT /meetings/{id}` | Registers a recording: `{started_at, ended_at?, app_version?}`, ISO 8601 with offset. Writes `meta.json` and the row (`uploading`), and returns a presigned PUT for the audio. Again while `uploading` or `failed`: a fresh URL. Otherwise 409 |
+| `PUT /meetings/{id}` | Registers a recording: `{started_at, ended_at?, app_version?}`, ISO 8601 with offset. Writes `meta.json` and the row (`uploading`), and returns a presigned PUT for the audio. Again while `uploading` or `failed`: a fresh URL. Otherwise 409. 429 while 10 of the person's other meetings are still being summarised; the apps send it again at their next sync |
 | `POST /meetings/{id}/uploaded` | The upload finished: `uploading` becomes `queued`. The upload itself started the job |
 | `GET /meetings/{id}` | The meeting, and once `ready` its `results` ([data.md](data.md)). Each speaker gets `clip_urls` and `candidates`, the 5 people closest in voice |
 | `DELETE /meetings/{id}` | The meeting and everything Tally learned from it (below) |

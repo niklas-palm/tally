@@ -220,6 +220,16 @@ def test_a_recording_is_created_uploaded_and_listed(aws):
     assert call("GET /meetings/{id}", id="not-a-ulid")[0] == 400
 
 
+def test_ten_meetings_on_their_way_are_enough_for_one_person(aws):
+    for n in range(10):
+        aws["meetings"].put_item({"owner": ME, "meeting_id": f"01M5JHFTFH01KXC4V2P9JNFA{n:02d}", "state": "queued", "updated_at": api.now()})
+    started = {"started_at": "2026-10-22T09:00:00Z"}
+    assert call("PUT /meetings/{id}", started, id=MEETING)[0] == 429  # a runaway app: sent at the next sync, once some are done
+    assert call("PUT /meetings/{id}", started, user=FRIEND, id=MEETING)[0] == 200  # someone else's are theirs
+    aws["meetings"].items[(ME, "01M5JHFTFH01KXC4V2P9JNFA00")]["state"] = "ready"
+    assert call("PUT /meetings/{id}", started, id=MEETING)[0] == 200
+
+
 def test_a_ready_meeting_comes_with_its_results_clip_links_and_voices_that_sound_alike(aws):
     ready_meeting(aws, {"S1": None})  # S1's voice: along the first axis
     aws["people"].put_item({"owner": ME, "person_id": "p_a", "name": "Alex"})
