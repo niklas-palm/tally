@@ -197,14 +197,21 @@ def rewriting(item: dict) -> bool:
     return bool(item.get("rewriting")) and datetime.now(UTC) - datetime.fromisoformat(item["rewriting"]) < REWRITE_WAIT
 
 
+ON_THEIR_WAY = 10  # meetings sent and not yet summarised, per person: one records one at a time, more is a runaway app
+
+
 def create_meeting(owner, params, body) -> dict:
     """Registers a recording and hands back where to upload it. Calling it again for one still uploading, or one
     that failed (Send again), gives a fresh URL; for one already on its way or ready it refuses, so a repeated send
-    can never start a second run or overwrite what the owner confirmed."""
+    can never start a second run or overwrite what the owner confirmed. While ON_THEIR_WAY of the person's other
+    meetings are still being summarised, it says so (429) and the app sends it again at its next sync."""
     meeting_id = params["id"]
     existing = meeting_of(owner, meeting_id)
     if existing and summary_of(existing)["state"] not in ("uploading", "failed"):
         raise Problem(409, "this meeting has been sent already")
+    working = [m for m in mine(meetings, owner) if m["meeting_id"] != meeting_id and summary_of(m)["state"] in ("uploading", "queued", "processing")]
+    if len(working) >= ON_THEIR_WAY:
+        raise Problem(429, f"{ON_THEIR_WAY} of your meetings are being summarised already. This one is sent when they're done")
     meta = {k: instant(body.get(k)) for k in ("started_at", "ended_at")} | {"app_version": line(body.get("app_version") or "")}
     meta = {k: v for k, v in meta.items() if v}
     if "started_at" not in meta:
