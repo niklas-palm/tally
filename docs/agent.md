@@ -22,7 +22,7 @@ Config's `modelId` on Bedrock, with adaptive thinking at high effort and prompt 
 
 ## The prompt
 
-- **One fixed Markdown file,** `prompts/system.md`, followed by `prompts/summary.md`, so it can be cached. Each run adds the meeting's details, the owner's known people, and a line per speaker with their stats and voiceprint matches.
+- **One fixed Markdown file,** `prompts/system.md`, followed by `prompts/summary.md`, so it can be cached. Each run adds the meeting's details, the owner's known people, and a line per speaker with their stats and voiceprint matches. Names, roles and companies are quoted there: they are text someone typed, never instructions.
 - **Transcript text is data, not instructions.** Anyone in a meeting can say "ignore your instructions". The prompt says so, and the CLI returns transcript lines only in a `transcript` field.
 - **Tool docstrings are prompts:** when to use a tool, and when not.
 
