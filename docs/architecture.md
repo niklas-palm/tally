@@ -78,7 +78,7 @@ The summary refers to speakers by id (`{S2}`), never by name, and the app fills 
 - **The API:** an HTTP API with a JWT authorizer and one Python Lambda.
 - **Sign-in:** any OIDC provider in config's `auth`, or else a Cognito user pool whose people an admin adds.
 - **The site:** a private S3 bucket that only CloudFront reads.
-- **AWS Batch:** one on-demand compute environment across two AZs, single-GPU instance types (config's `gpu.instanceTypes`), and an x86 image with the models baked in. Config's `gpu.warm` keeps none, one, or one in set hours.
+- **AWS Batch:** one on-demand compute environment across two AZs, single-GPU instance types (config's `gpu.instanceTypes`), and an x86 image with the models baked in. Config's `gpu.warm` keeps none, one, or one in set hours and days.
 - **Network:** public subnets, no ingress, IMDSv2, and a firewall rule that gives the agent's shell no network.
 
 ## Why it's built this way

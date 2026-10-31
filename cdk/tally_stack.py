@@ -60,7 +60,7 @@ class TallyStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, config: dict, certificate: acm.ICertificate | None, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         gpu = config["gpu"]
-        warm = gpu.get("warm")  # none: no GPU when nothing runs; {vcpus}: always one warm; {vcpus, from, to}: in those hours
+        warm = gpu.get("warm")  # none: no GPU when nothing runs; {vcpus}: always one warm; {vcpus, from, to[, days]}: in those hours
 
         key = kms.Key(self, "DataKey", enable_key_rotation=True, description="Tally's meetings, transcripts and voiceprints")
         bucket = s3.Bucket(self, "Data", encryption=s3.BucketEncryption.KMS, encryption_key=key, bucket_key_enabled=True,
@@ -293,13 +293,14 @@ class TallyStack(cdk.Stack):
 
     def warm_hours(self, compute: batch.ManagedEc2EcsComputeEnvironment, warm: dict, timezone: str) -> None:
         """One GPU instance warm in the day, none at night: EventBridge Scheduler calls Batch itself, at
-        the start and the end of config.json's warm hours, in its time zone (so summer time takes care of itself)."""
+        the start and the end of config.json's warm hours, in its time zone (so summer time takes care of itself), on
+        its warm days (every day, unless `days` names some, as `MON-FRI`)."""
         role = iam.Role(self, "WarmHoursRole", assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
                         description="Sets the GPU environment's minimum, morning and night")
         role.add_to_policy(iam.PolicyStatement(actions=["batch:UpdateComputeEnvironment"], resources=[compute.compute_environment_arn]))
         for name, hour, minimum in (("WarmFrom", warm["from"], warm["vcpus"]), ("WarmUntil", warm["to"], 0)):
             scheduler.CfnSchedule(
-                self, name, schedule_expression=f"cron(0 {hour} * * ? *)", schedule_expression_timezone=timezone,
+                self, name, schedule_expression=f"cron(0 {hour} ? * {warm.get('days', '*')} *)", schedule_expression_timezone=timezone,
                 flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(mode="OFF"),
                 target=scheduler.CfnSchedule.TargetProperty(
                     arn="arn:aws:scheduler:::aws-sdk:batch:updateComputeEnvironment", role_arn=role.role_arn,

@@ -66,7 +66,7 @@ Every setting is in the example. The optional ones are off there (`null`, `false
 
 **Another region than eu-north-1:** change `region`, `modelId`'s prefix, `modelPrices`, `timezone` and `gpu.instanceTypes` (`aws ec2 describe-instance-type-offerings --region <region>` lists a region's types).
 
-**`gpu.warm`** keeps a GPU running, so a meeting starts within seconds instead of after a 6–7 minute cold start. `{"vcpus": 4}` keeps one always on; `{"vcpus": 4, "from": 7, "to": 21}` keeps one from 07:00 to 21:00.
+**`gpu.warm`** keeps a GPU running, so a meeting starts within seconds instead of after a 6–7 minute cold start. `{"vcpus": 4}` keeps one always on; `{"vcpus": 4, "from": 7, "to": 21}` keeps one from 07:00 to 21:00, and adding `"days": "MON-FRI"` keeps it on weekdays only.
 
 **`sharedVoices`** also suggests matches among the people everyone else in your deployment has named. It shares biometric data of people who never used Tally: be sure you have a legal basis (in the EU, GDPR) and that your users know.
 
