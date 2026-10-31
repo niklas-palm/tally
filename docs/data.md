@@ -99,7 +99,7 @@ The version ends in a hash of the settings. An archive is never changed once wri
                               "meeting_id": "01H...", "embedding": [0.01, ...]}]}]}
 ```
 - The job writes it from the tables for prepare, then with `voiceprints` empty before the agent runs.
-- With `sharedVoices`, it also holds colleagues' people (`person_id` `shared:<id>`, `"shared": true`), and the agent sees only those a speaker matched, by name.
+- With `sharedVoices`, the job matches colleagues' people in memory after prepare, never in this file, and adds those a speaker matched to it, by name alone (`person_id` `shared:<id>`, `"shared": true`).
 
 `summary.json`: the standard is `pipeline/tally/prompts/summary.md`, the rules `pipeline/tally/summary.py`.
 ```json
