@@ -178,7 +178,7 @@ def test_a_voice_from_the_shared_pool_becomes_the_owners_own_person(meeting, mon
     store = FakeStore()
     publish.publish(root, "m1", {}, store)
     identity = work.read("results/meeting.json", root)["speakers"]["S1"]["identity"]
-    assert identity["person_id"].startswith("p_") and identity["suggestion"] is True  # the owner's now, theirs to confirm
+    assert identity["person_id"].startswith("p_") and identity["suggestion"] is True and identity["shared"] is True  # the owner's now, theirs to confirm
     assert "Alice Brown" in [name for _, name in store.people]
 
 

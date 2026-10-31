@@ -438,7 +438,10 @@ private struct SpeakerCard: View {
         switch review {
         case .suggested:
             HStack {
-                Text("Is this \(names.name(speaker))?").font(.callout)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Is this \(names.name(speaker))?").font(.callout)
+                    if names.byColleague(speaker) { Text("Named by a colleague").font(.caption).foregroundStyle(.secondary) }
+                }
                 Spacer()
                 // A suggestion is someone whose voice the owner hasn't confirmed: Yes asks for their details too
                 Button("Yes…") { confirming.wrappedValue = true }

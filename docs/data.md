@@ -133,8 +133,9 @@ The version ends in a hash of the settings. An archive is never changed once wri
 }
 ```
 - Clip paths are relative to the meeting. `language` is `en`, `sv` or null.
-- A named identity keeps only `name`, `person_id`, `role`, `company`, `confidence`, `evidence`, `suggestion` and `by`. One the owner set has `by: owner`; a background voice is `{"unknown": true, "background": true, "reason": "...", "by": "owner"}`.
+- A named identity keeps only `name`, `person_id`, `role`, `company`, `confidence`, `evidence`, `suggestion`, `shared` and `by`. One the owner set has `by: owner`; a background voice is `{"unknown": true, "background": true, "reason": "...", "by": "owner"}`.
 - `suggestion`: a shared voice, or a person with only `auto` voiceprints.
+- `shared`: `true` when the name came from the shared voices, a colleague's naming; the apps say "Named by a colleague" until the owner settles it.
 - `summary_without`: the background voices the summary was last written without; absent until a rewrite.
 - A `meeting.json` over 4 MB fails the meeting.
 
