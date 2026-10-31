@@ -28,9 +28,16 @@ def line(text: str) -> str | None:
     it can't be. They reach prompts, other people's with shared voices, so the agent is held to what the
     API holds the owner to."""
     joined = " ".join(text.split())
-    if not 0 < len(joined) <= LINE or any(unicodedata.category(c) in ("Cc", "Cs", "Zl", "Zp") for c in text):
+    if not 0 < len(joined) <= LINE or any(map(invisible, text)):
         return None
     return joined
+
+
+def invisible(c: str) -> bool:
+    """A character that's no part of a visible name: a control, a line break, unassigned or private, or a format
+    character (invisible tags a model reads, direction overrides), save the joiners some scripts need."""
+    category = unicodedata.category(c)
+    return category in ("Cc", "Cs", "Co", "Cn", "Zl", "Zp") or category == "Cf" and c not in "\u200c\u200d"
 
 
 def voiceless(people: list[dict]) -> list[dict]:
