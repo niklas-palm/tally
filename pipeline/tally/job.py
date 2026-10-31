@@ -110,13 +110,15 @@ def main() -> None:
         s3.download_file(settings.bucket, key, str(audio))
         meta = json.loads(s3.get_object(Bucket=settings.bucket, Key=f"{prefix}/meta.json")["Body"].read())
         mine = store.load()
-        work.write("people.json", {"people": mine + (store.shared(mine) if settings.shared_voices else [])}, path)
+        pool = store.shared(mine) if settings.shared_voices else []
+        work.write("people.json", {"people": mine}, path)
 
         started = time.monotonic()
         prepared = prepare.run(audio, path)
-        # prepare has matched the voices: from here on the folder holds people, never voiceprints
-        pool = matched_pool(path) if settings.shared_voices else []
-        work.write("people.json", {"people": voiceprints.voiceless(mine + pool)}, path)
+        # prepare has matched the owner's people, and the pool is matched here: from now on the folder holds people,
+        # never voiceprints
+        matched = match_pool(path, pool)
+        work.write("people.json", {"people": voiceprints.voiceless(mine + matched)}, path)
         metrics.append({"step": "prepare", "seconds": round(time.monotonic() - started, 1), "timings": prepared["timings"],
                         "duration": prepared["duration"], "speakers": prepared["speakers"], "language": prepared["language"]})
         log.info("prepared: %s", metrics[-1])
@@ -161,12 +163,20 @@ def main() -> None:
         sys.exit(1)
 
 
-def matched_pool(path: Path) -> list[dict]:
-    """Of the shared pool, only the people this meeting's voices matched, with their names alone: nothing else of a
-    colleague's reaches the agent's folder."""
-    # a pooled person is in a speaker's matches only at NO_MATCH or more (voiceprints.match)
-    matched = {m["person_id"] for s in work.read("speakers.json", path)["speakers"].values() for m in s["matches"]}
-    return [p | {"role": None, "company": None} for p in work.read("people.json", path)["people"] if p.get("shared") and p["person_id"] in matched]
+def match_pool(path: Path, pool: list[dict]) -> list[dict]:
+    """The shared pool matched against this meeting's voices in memory, and added to each speaker's matches: the pool
+    can hold every colleague's voiceprints, too many for a file the agent's tools read. Returns the people a speaker's
+    matches still list, with their names alone: nothing else of a colleague's reaches the agent's folder."""
+    if not pool:
+        return []
+    speakers = work.read("speakers.json", path)
+    embeddings = work.read_embeddings(path)
+    for speaker, s in speakers["speakers"].items():
+        if speaker in embeddings:  # a pooled person is listed only at NO_MATCH or more (voiceprints.match)
+            s["matches"] = sorted(s["matches"] + voiceprints.match(embeddings[speaker], pool), key=lambda m: -m["score"])[:voiceprints.TOP]
+    work.write("speakers.json", speakers, path)
+    listed = {m["person_id"] for s in speakers["speakers"].values() for m in s["matches"]}
+    return [p | {"role": None, "company": None} for p in pool if p["person_id"] in listed]
 
 
 def upload(s3, prefix: str, metrics: list[dict]) -> None:
