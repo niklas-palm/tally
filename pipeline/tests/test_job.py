@@ -162,8 +162,9 @@ def test_of_the_shared_pool_only_the_people_this_meetings_voices_matched_reach_t
             {"person_id": "shared:p_dina", "name": "Dina", "role": "CFO", "shared": True, "voiceprints": prints(1)}]
     work.write("speakers.json", {"speakers": {"S1": {"matches": [{"person_id": "p_ada", "name": "Ada", "score": 0.3, "sources": ["user"]}]}}}, tmp_path)
     work.write_embeddings({"S1": voice(0)}, tmp_path)  # Carl's voice; Dina's is too far off to be listed
-    matched = job.match_pool(tmp_path, pool)
+    matched, heard = job.match_pool(tmp_path, pool)
     assert [(p["person_id"], p["role"], p["company"]) for p in matched] == [("shared:p_carl", None, None)]
+    assert heard == {"S1": {"carl"}}  # for publish, from the job itself
     listed = work.read("speakers.json", tmp_path)["speakers"]["S1"]["matches"]
     assert [m["person_id"] for m in listed] == ["shared:p_carl", "p_ada"]  # the owner's and the pool's, by score
 

@@ -196,6 +196,31 @@ def test_a_colleagues_naming_saves_no_voiceprint(meeting, monkeypatch):
     assert store.voiceprints == []  # the owner's to confirm: a voiceprint from a colleague's mistake would spread it
 
 
+def test_a_colleagues_name_on_the_owners_own_person_is_still_a_colleagues_naming(meeting, monkeypatch):
+    root = job_root(meeting, monkeypatch)
+    harness.run(root / "work", {}, model=Scripted(finish_replies()))  # S1 named Alice Brown: the owner's own Alice, no voice yet
+    speakers = work.read("speakers.json")
+    speakers["speakers"]["S1"]["clean_speech"] = 40.0
+    work.write("speakers.json", speakers)
+    store = FakeStore([p | {"voiceprints": []} for p in work.read("people.json")["people"]])
+    publish.publish(root, "m1", {}, store, heard={"S1": {"alice brown"}})  # a colleague's Alice Brown matched S1's voice
+    identity = work.read("results/meeting.json", root)["speakers"]["S1"]["identity"]
+    assert identity["shared"] is True and identity["suggestion"] is True and store.voiceprints == []
+
+
+def test_a_voice_the_pool_matched_gets_no_voiceprint_whatever_it_was_named(meeting, monkeypatch):
+    root = job_root(meeting, monkeypatch)
+    harness.run(root / "work", {}, model=Scripted(finish_replies()))
+    speakers = work.read("speakers.json")
+    speakers["speakers"]["S1"]["clean_speech"] = 40.0
+    work.write("speakers.json", speakers)
+    store = FakeStore()
+    # The pool's name for this voice held a note, and the agent named them from the meeting instead
+    publish.publish(root, "m1", {}, store, heard={"S1": {"oskar (don't rehire)"}})
+    identity = work.read("results/meeting.json", root)["speakers"]["S1"]["identity"]
+    assert "shared" not in identity and store.voiceprints == []
+
+
 def test_a_person_deleted_while_the_job_ran_is_made_again_not_given_a_voice_nobody_sees(meeting, monkeypatch):
     root = job_root(meeting, monkeypatch)
     harness.run(root / "work", {}, model=Scripted(finish_replies()))

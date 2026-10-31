@@ -50,7 +50,8 @@ def refuse_too_big(meeting: dict) -> None:
         raise ValueError("results/meeting.json would be more than the API can answer with, so no app could open it")
 
 
-def publish(root: Path, meeting_id: str, meta: dict, store: Store) -> dict:
+def publish(root: Path, meeting_id: str, meta: dict, store: Store, heard: dict[str, set[str]] | None = None) -> dict:
+    """`heard`: for each speaker, the names of the shared pool's people its voice matched, as the job matched them."""
     path = root / "work"
     speakers = work.read("speakers.json", path)["speakers"]
     if any(not re.fullmatch(r"S\d+", speaker) for speaker in speakers):  # they become S3 keys and paths, and rows
@@ -100,11 +101,16 @@ def publish(root: Path, meeting_id: str, meta: dict, store: Store) -> dict:
                 new = True
         if not new:  # someone known: what this meeting says they do fills only what's still empty
             store.fill_person(identity["person_id"], identity.get("role"), identity.get("company"))
-        identity["suggestion"] = bool(pooled) or suggestion(identity["person_id"], known)  # a pooled voice: theirs to confirm
-        if pooled:
-            identity["shared"] = True  # a colleague's naming: the apps say so beside "Is this …?"
-        # A colleague's naming is the owner's to confirm: an `auto` voiceprint from it would spread a mistake
-        if not pooled and speaker in embeddings and sound(embeddings[speaker]) and may_save_voiceprint(s):
+        # A colleague's naming, by the pool's id, or by a name a colleague gave this voice (one of the owner's own
+        # people of that name, or the agent's files edited): the owner's to confirm
+        matched = (heard or {}).get(speaker, set())
+        colleague = bool(pooled) or identity["name"].casefold() in matched
+        identity["suggestion"] = colleague or suggestion(identity["person_id"], known)
+        if colleague:
+            identity["shared"] = True  # the apps say so beside "Is this …?"
+        # A voice the pool matched gets no `auto` voiceprint, whatever it was named: one from a colleague's mistake
+        # would spread it
+        if not pooled and not matched and speaker in embeddings and sound(embeddings[speaker]) and may_save_voiceprint(s):
             end = max(t["end"] for t in turns if t["speaker"] == speaker)
             store.put_voiceprint(identity["person_id"], f"v_{ulid()}", embeddings[speaker], "auto", meeting_id, speaker, s["first_seen"], end, s["clean_speech"])
             saved.append(speaker)
