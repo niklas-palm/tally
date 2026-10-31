@@ -23,6 +23,23 @@ public class NamesTests
         Assert.Equal("Deputy to Alex Kim", names.Role(new Attendee("S2", "Deputy to {S1}", "Took notes.")));
     }
 
+    /// <summary>A guess from the shared voices says so, until the owner settles it.</summary>
+    [Fact]
+    public void A_guess_from_a_colleagues_naming_says_so()
+    {
+        var results = Fixtures.Results("""
+            {"meeting_id": "01M", "language": "en", "duration": 60, "summary": @SUMMARY,
+             "speakers": {"S1": {"talk_time": 60, "turns": 3, "identity": {"name": "Maja", "person_id": "p_1", "by": "agent", "shared": true}},
+                          "S2": {"talk_time": 30, "turns": 2, "identity": {"name": "Sam", "person_id": "p_2", "by": "agent"}},
+                          "S3": {"talk_time": 30, "turns": 2, "identity": {"name": "Bo", "person_id": "p_3", "by": "owner", "shared": true}}},
+             "segments": []}
+            """.Replace("@SUMMARY", Fixtures.Summary));
+        var names = new Names(results, new Dictionary<string, Person> { ["p_1"] = Fixtures.Person("p_1", "Maja"), ["p_2"] = Sam, ["p_3"] = Fixtures.Person("p_3", "Bo") });
+        Assert.True(names.ByColleague("S1"));
+        Assert.False(names.ByColleague("S2"));  // this meeting's own guess
+        Assert.False(names.ByColleague("S3"));  // the owner said so: settled
+    }
+
     [Fact]
     public void Names_follow_the_people_and_who_confirmed()
     {

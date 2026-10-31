@@ -60,6 +60,7 @@ struct Results: Decodable {
         let by: String?  // agent or owner
         let unknown: Bool?
         let background: Bool?  // the owner said it wasn't in the meeting: a voice nearby
+        let shared: Bool?  // named from the shared voices: a colleague's naming, the owner's to confirm
     }
 
     struct Segment: Decodable { let start: Double; let end: Double; let speaker: String; let text: String }
@@ -123,6 +124,11 @@ struct Names {
 
     /// Who was in the meeting, in the order they first spoke: everyone but a voice set aside as background.
     var participants: [String] { results.speakerOrder.filter { review($0) != .background } }
+
+    /// A guess that came from a colleague's naming (shared voices), not from this meeting alone.
+    func byColleague(_ speaker: String) -> Bool {
+        review(speaker) == .suggested && results.speakers[speaker]?.identity?.shared == true
+    }
 
     func review(_ speaker: String) -> Review {
         guard let identity = results.speakers[speaker]?.identity else { return .unknown }

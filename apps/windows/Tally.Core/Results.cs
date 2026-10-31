@@ -93,7 +93,8 @@ public sealed record Candidate(string PersonId, double Score)
 
 /// <param name="By">agent or owner.</param>
 /// <param name="Background">The owner said it wasn't in the meeting: a voice nearby.</param>
-public sealed record Identity(string? Name = null, string? PersonId = null, string? By = null, bool? Unknown = null, bool? Background = null);
+/// <summary>`Shared`: named from the shared voices, a colleague's naming that's the owner's to confirm.</summary>
+public sealed record Identity(string? Name = null, string? PersonId = null, string? By = null, bool? Unknown = null, bool? Background = null, bool? Shared = null);
 
 public sealed record Segment(double Start, double End, string Speaker, string Text);
 
@@ -141,6 +142,10 @@ public sealed partial class Names(Results results, IReadOnlyDictionary<string, P
 
     /// <summary>Who was in the meeting, in the order they first spoke: everyone but a voice set aside as background.</summary>
     public IReadOnlyList<string> Participants => results.SpeakerOrder.Where(s => ReviewOf(s) != Review.Background).ToList();
+
+    /// <summary>A guess that came from a colleague's naming (shared voices), not from this meeting alone.</summary>
+    public bool ByColleague(string speaker) =>
+        ReviewOf(speaker) == Review.Suggested && results.Speakers.GetValueOrDefault(speaker)?.Identity?.Shared == true;
 
     public Review ReviewOf(string speaker)
     {

@@ -184,7 +184,9 @@ internal static class Speakers
         var no = Ui.Button("No…", () => model.Assigning = new AssignForm(meeting, speaker, rejected: identity?.PersonId));
         Ui.Name(no, $"No, it isn't {name}");
         yes.IsEnabled = no.IsEnabled = !saving;
-        return Ui.Grid("*,Auto", spacing: 8).Add(Ui.Text($"Is this {name}?").With(t => t.VerticalAlignment = VerticalAlignment.Center), Ui.Row(6, yes, no).At(1));
+        UIElement question = Ui.Text($"Is this {name}?").With(t => t.VerticalAlignment = VerticalAlignment.Center);
+        if (names.ByColleague(speaker)) question = Ui.Column(2, question, Ui.Caption("Named by a colleague"));
+        return Ui.Grid("*,Auto", spacing: 8).Add(question, Ui.Row(6, yes, no).At(1));
     }
 
     /// <summary>Listen, and how long they spoke: on a chip's flyout and a card.</summary>

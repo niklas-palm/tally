@@ -43,6 +43,21 @@ private func person(_ id: String, _ name: String, role: String? = nil, company: 
     #expect(names.asks("S1") && names.asks("S2") && !names.asks("S3"))
 }
 
+/// A guess from the shared voices says so, until the owner settles it.
+@Test func aGuessFromAColleaguesNamingSaysSo() throws {
+    let json = """
+    {"language": "en", "duration": 60,
+     "summary": {"title": "Chat", "overview": "", "summary": [], "decisions": [], "action_items": [], "open_questions": [], "topics": [], "attendees": []},
+     "speakers": {"S1": {"talk_time": 60, "turns": 3, "identity": {"name": "Maja", "person_id": "p_1", "by": "agent", "shared": true}},
+                  "S2": {"talk_time": 30, "turns": 2, "identity": {"name": "Sam", "person_id": "p_2", "by": "agent"}},
+                  "S3": {"talk_time": 30, "turns": 2, "identity": {"name": "Bo", "person_id": "p_3", "by": "owner", "shared": true}}},
+     "segments": []}
+    """
+    let results = try API.decoder.decode(Results.self, from: Data(json.utf8))
+    let names = Names(results: results, people: ["p_1": person("p_1", "Maja"), "p_2": person("p_2", "Sam"), "p_3": person("p_3", "Bo")])
+    #expect(names.byColleague("S1") && !names.byColleague("S2") && !names.byColleague("S3"))
+}
+
 /// Someone who said only a few words (a remark across the room) isn't asked about: too little to stop for.
 @Test func someoneWhoSaidLittleIsntAskedAbout() throws {
     let json = """
