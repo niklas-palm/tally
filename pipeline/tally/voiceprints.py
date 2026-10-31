@@ -93,16 +93,18 @@ class Store:
         return list(people.values())
 
     def shared(self, mine: list[dict]) -> list[dict]:
-        """Everyone else's named people who have voiceprints, for a deployment that shares voices (sharedVoices):
-        one entry a name, with all their voiceprints, leaving out names this owner knows already (`mine`, their own
-        people). A meeting that names one makes them this owner's person when it's published."""
+        """Everyone else's named people with voiceprints their owner confirmed, for a deployment that shares voices
+        (sharedVoices): one entry a name, with those voiceprints, leaving out names this owner already knows by voice
+        (`mine`, their own people). A meeting that names one makes them this owner's person when it's published."""
         people_table, voiceprints_table = self.tables()
         others = {p["person_id"]: p for p in scan(people_table) if p["owner"] != self.owner}
-        known = {name.casefold() for p in mine for name in [p["name"], *p["aliases"]]}
+        # a person of the owner's without a voice doesn't hide a colleague's: Tally couldn't recognise them otherwise
+        known = {name.casefold() for p in mine if p.get("voiceprints") for name in [p["name"], *p["aliases"]]}
         pool: dict[str, dict] = {}
         for v in scan(voiceprints_table):
             person = others.get(v["person_id"])
-            if not person or person["owner"] != v["owner"]:
+            # only a voice its owner confirmed: an `auto` one may be the agent's mistake, and it would spread
+            if not person or person["owner"] != v["owner"] or v["source"] != "user":
                 continue
             # a colleague's name reaches other people's prompts: one that isn't one line is left out, whatever stored it
             name = line(person["name"])

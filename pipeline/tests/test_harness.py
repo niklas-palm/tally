@@ -182,6 +182,20 @@ def test_a_voice_from_the_shared_pool_becomes_the_owners_own_person(meeting, mon
     assert "Alice Brown" in [name for _, name in store.people]
 
 
+def test_a_colleagues_naming_saves_no_voiceprint(meeting, monkeypatch):
+    people = work.read("people.json", meeting)  # Alice is a colleague's person, from the shared pool
+    people["people"][0] |= {"person_id": "shared:p_alice", "shared": True}
+    work.write("people.json", people, meeting)
+    root = job_root(meeting, monkeypatch)
+    harness.run(root / "work", {}, model=Scripted(finish_replies()))
+    speakers = work.read("speakers.json")
+    speakers["speakers"]["S1"]["clean_speech"] = 40.0  # enough for an auto voiceprint, were she the owner's own
+    work.write("speakers.json", speakers)
+    store = FakeStore()
+    publish.publish(root, "m1", {}, store)
+    assert store.voiceprints == []  # the owner's to confirm: a voiceprint from a colleague's mistake would spread it
+
+
 def test_a_person_deleted_while_the_job_ran_is_made_again_not_given_a_voice_nobody_sees(meeting, monkeypatch):
     root = job_root(meeting, monkeypatch)
     harness.run(root / "work", {}, model=Scripted(finish_replies()))
