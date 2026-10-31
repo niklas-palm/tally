@@ -13,7 +13,7 @@ The contract between the apps and the cloud: an API Gateway HTTP API (the stack'
 
 Bodies and replies are JSON with snake_case keys. Errors are `{"error": "..."}`, with 400 (a bad request), 401, 403 (not an admin, or a bad user id), 404 (not there, or not the caller's), 409 (a conflict: sent already, not ready, changed meanwhile), 429 (too many on their way) or 500.
 
-Every request carries `X-Tally-Version`, and `GET /meetings` records it in the `users` table with the token's name and email. Meeting ids are ULIDs made by the app. A person's name, role and company are one line of at most 100 characters, because they reach the agent's prompt.
+Every request carries `X-Tally-Version`, and `GET /meetings` records it in the `users` table with the token's name and email. Meeting ids are ULIDs made by the app. A person's name, role and company are one line of at most 100 characters, with no invisible characters (format, private or unassigned ones, save the joiners some scripts need), because they reach the agent's prompt.
 
 | Route | What it does |
 |---|---|

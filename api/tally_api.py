@@ -61,9 +61,16 @@ def line(value: str) -> str:
     companies reach the meeting agent's prompt (and, with shared voices, colleagues'), so nothing longer or on several
     lines gets in."""
     joined = " ".join(value.split())  # a non-breaking or other space is a space
-    if len(joined) > LINE_CHARACTERS or any(unicodedata.category(c) in ("Cc", "Zl", "Zp") for c in value):
+    if len(joined) > LINE_CHARACTERS or any(map(invisible, value)):
         raise Problem(400, f"a name, role, company or version is one line of at most {LINE_CHARACTERS} characters")
     return joined
+
+
+def invisible(c: str) -> bool:
+    """A character that's no part of a visible name: a control, a line break, unassigned or private, or a format
+    character (invisible tags a model reads, direction overrides), save the joiners some scripts need."""
+    category = unicodedata.category(c)
+    return category in ("Cc", "Cs", "Co", "Cn", "Zl", "Zp") or category == "Cf" and c not in "\u200c\u200d"
 
 
 TIME = re.compile(r"20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(Z|[+-](0\d|1[0-3]):[0-5]\d|[+-]14:00)")
