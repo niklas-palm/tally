@@ -81,13 +81,18 @@ def system_prompt(path: Path, meta: dict) -> str:
     meeting = [f"- Date: {meta.get('started_at', 'unknown')}",
                f"- Duration: {work.clock(manifest['duration'])}", f"- Language: {manifest['language']}",
                f"- Channels: {manifest['layout']} ({LAYOUTS[manifest['layout']]})"]
-    known = [f"- {p['name']}{' (the owner)' if p['is_owner'] else ''}{SHARED_NOTE if p.get('shared') else ''}: "
-             + "".join(f"{field} {p[field]}; " for field in ("role", "company") if p.get(field))
-             + f"aliases {', '.join(p['aliases']) or 'none'}" for p in people] or ["- None yet."]
+    known = [f"- {quoted(p['name'])}{' (the owner)' if p['is_owner'] else ''}{SHARED_NOTE if p.get('shared') else ''}: "
+             + "".join(f"{field} {quoted(p[field])}; " for field in ("role", "company") if p.get(field))
+             + f"aliases {', '.join(map(quoted, p['aliases'])) or 'none'}" for p in people] or ["- None yet."]
     found = [f"- {k}: {v['talk_time']} s talk time, {v['turns']} turns, first at {work.clock(v['first_seen'])}, "
-             f"best voiceprint matches: {', '.join(f'{m['name']} {m['score']}' for m in v['matches']) or 'none'}" for k, v in speakers.items()]
+             f"best voiceprint matches: {', '.join(f'{quoted(m['name'])} {m['score']}' for m in v['matches']) or 'none'}" for k, v in speakers.items()]
     return "\n\n".join([SYSTEM, "# This meeting\n\n" + "\n".join(meeting), "# Known people\n\n" + "\n".join(known),
                         "# Speakers\n\n" + "\n".join(found)])
+
+
+def quoted(text: str) -> str:
+    """What someone typed (a name, a role, a company), in quotes: set apart from the prompt's own words."""
+    return json.dumps(text, ensure_ascii=False)
 
 
 def passing(e: BaseException | None) -> bool:
