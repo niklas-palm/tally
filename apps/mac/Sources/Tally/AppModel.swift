@@ -1390,6 +1390,10 @@ import UserNotifications
             let ready = fresh.filter { m in m.state == "ready" && meetings.contains { $0.meetingId == m.meetingId && $0.state != "ready" } }
             // A summary rewritten without background voices since the last sync: read it again
             let rewritten = fresh.filter { m in m.rewriting == nil && meetings.contains { $0.meetingId == m.meetingId && $0.rewriting != nil } }
+            // Changed on another computer since the last sync, while its results were here: read again, or a speaker
+            // named there shows unnamed here until the clip links run out
+            let edited = fresh.filter { m in m.state == "ready" && results[m.meetingId] != nil && !rewritten.contains { $0.meetingId == m.meetingId }
+                && meetings.contains { $0.meetingId == m.meetingId && $0.editedAt != m.editedAt } }
             meetings = fresh
             people = freshPeople
             if renamingFolder == nil { folders = freshFolders }  // not under a name being typed
@@ -1402,6 +1406,7 @@ import UserNotifications
                 await reload(meeting.meetingId)
                 notifier.rewritten(meeting)
             }
+            for meeting in edited { await reload(meeting.meetingId) }
             // Done with once its meeting isn't on its way: ready, or not listed because it was deleted on another device
             // (its row is made before the upload starts)
             for recording in recordings where [.sent, .uploaded].contains(recording.state)

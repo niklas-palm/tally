@@ -1910,6 +1910,10 @@ public sealed class AppModel : ObservableObject
             var ready = fresh.Where(m => m.State == "ready" && Meetings.Any(old => old.MeetingId == m.MeetingId && old.State != "ready")).ToList();
             // A summary rewritten without background voices since the last sync: read it again
             var rewritten = fresh.Where(m => m.Rewriting == null && Meetings.Any(old => old.MeetingId == m.MeetingId && old.Rewriting != null)).ToList();
+            // Changed on another computer since the last sync, while its results were here: read again, or a speaker
+            // named there shows unnamed here until the clip links run out
+            var edited = fresh.Where(m => m.State == "ready" && Results.ContainsKey(m.MeetingId) && !rewritten.Any(r => r.MeetingId == m.MeetingId)
+                && Meetings.Any(old => old.MeetingId == m.MeetingId && old.EditedAt != m.EditedAt)).ToList();
             Meetings = [.. fresh];
             People = [.. freshPeople];
             if (RenamingFolder == null) Folders = [.. freshFolders];  // not under a name being typed
@@ -1924,6 +1928,7 @@ public sealed class AppModel : ObservableObject
                 await Reload(meeting.MeetingId);
                 notifier.Rewritten(meeting);
             }
+            foreach (var meeting in edited) await Reload(meeting.MeetingId);
             // Done with once its meeting isn't on its way: ready, or not listed because it was deleted on another device
             // (its row is made before the upload starts)
             foreach (var recording in Recordings.Where(r => r.State is RecordingState.Sent or RecordingState.Uploaded

@@ -727,6 +727,23 @@ public class AppModelTests : IDisposable
         Assert.Equal(RecordingState.Saved, Assert.Single(model.Recordings).State);
     });
 
+    /// <summary>A speaker named on another computer: the next sync shows the name, rather than the speaker staying
+    /// unnamed here until the meeting's clip links run out.</summary>
+    [Fact]
+    public void A_speaker_named_on_another_computer_shows_at_the_next_sync() => UiThread.Run(async () =>
+    {
+        SignIn();
+        Ready();
+        var model = Model();
+        await model.Auth.Token();
+        await model.Sync();  // the meeting's results, loaded: its speaker unknown
+        Assert.True(model.Results[Id].Speakers["S1"].Identity!.Unknown);
+        http.On(Meetings, 200, """{"meetings": [{"meeting_id": "@ID", "state": "ready", "title": "Budget", "started_at": "2026-10-22T09:00:00Z", "edited_at": "2026-11-01T18:50:00Z"}]}""".Replace("@ID", Id));
+        http.On($"GET {FakeHttp.Api}/meetings/{Id}", 200, Detail("""{"name": "Peter Larsson", "person_id": "p_peter", "by": "owner"}"""));
+        await model.Sync();  // named on another computer meanwhile: the meeting says it changed
+        Assert.Equal("Peter Larsson", model.Results[Id].Speakers["S1"].Identity!.Name);
+    });
+
     /// <summary>A voice confirmed in another meeting: this meeting's copy in the folder says so too, as its page does.</summary>
     [Fact]
     public void A_voice_confirmed_elsewhere_reaches_the_meetings_folder() => UiThread.Run(async () =>

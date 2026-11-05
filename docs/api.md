@@ -81,7 +81,7 @@ A meeting still `uploading`, `queued` or `processing` after 3 hours (the job's l
 1. **Record.** No sign-in needed; recordings wait on the computer.
 2. **Send.** `PUT /meetings/{id}`, PUT the audio to `upload_url`, then `POST /meetings/{id}/uploaded`. A failure retries from the step it reached.
 3. **Poll.** `GET /meetings` every 15 s while anything is on its way, otherwise every 60 s.
-4. **Read.** `GET /meetings/{id}` when one is opened, and again after 50 minutes, before its links expire.
+4. **Read.** `GET /meetings/{id}` when one is opened, and again after 50 minutes, before its links expire, or when `GET /meetings` shows its `edited_at` moved: changed on another computer.
 5. **Tidy up.** When a sent meeting is `ready`, or gone, the app deletes its local recording.
 
 The job's log (steps and timings only) is in the stack's `LogGroup` output, and the agent's conversation in `run/conversation.json`.
