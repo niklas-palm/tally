@@ -82,6 +82,12 @@ private func person(_ id: String, _ name: String, role: String? = nil, company: 
     #expect(AppModel.status("processing", error: nil, local: .sent) == .processing)
 }
 
+/// A problem the person is told of is logged as its type and message, as on Windows: what failed, never a meeting's text.
+@Test func aProblemIsLoggedAsItsTypeAndMessage() {
+    #expect(AppModel.described(API.Offline()) == "Offline: You're offline.")
+    #expect(AppModel.described(API.Failure(code: 500, message: nil)) == "Failure: Something went wrong on Tally's side. Try again in a moment.")
+}
+
 @Test func theAccountIsNamedFromItsToken() {
     let claims = Data(#"{"sub":"x","name":"Ada Lovelace","email":"ada@example.com"}"#.utf8).base64EncodedString()
         .replacing("+", with: "-").replacing("/", with: "_").replacing("=", with: "")

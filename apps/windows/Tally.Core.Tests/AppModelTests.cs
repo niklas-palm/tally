@@ -157,6 +157,20 @@ public class AppModelTests : IDisposable
         Assert.Equal(Status.Processing, AppModel.StatusOf("processing", null, RecordingState.Sent));
     }
 
+    /// <summary>What the person is told goes into the log too, so whoever helps them can see it afterwards.</summary>
+    [Fact]
+    public void A_failure_the_person_is_told_of_is_in_the_log_too() => UiThread.Run(async () =>
+    {
+        SignIn();
+        http.On(Meetings, 500, """{"error": "the meetings table is away"}""");
+        var model = Model();
+        await model.Sync();
+        Assert.NotNull(model.SyncError);
+        Assert.Contains(platform.Logged, line => line.StartsWith("problems: sync failed: Failure"));
+        await model.NewFolder();  // and an action's own failure, as its notice says it
+        Assert.Contains(platform.Logged, line => line.StartsWith("problems: couldn't make the folder: Failure"));
+    });
+
     [Fact]
     public void A_recording_is_sent_in_steps_and_goes_from_this_pc_once_its_summary_is_ready() => UiThread.Run(async () =>
     {

@@ -1821,6 +1821,8 @@ public sealed class AppModel : ObservableObject
     /// <summary>Something the owner asked for that didn't happen, said plainly. Offline, it isn't kept for later: they ask again.</summary>
     private void Report(Exception error, string action)
     {
+        // What the person was told, in the log too, so whoever helps can see it afterwards: never what a meeting says
+        Platform.Log.Write("problems", $"couldn't {action}: {error.GetType().Name}: {error.Message}");
         if (error is Api.Offline) Offline = true;
         Problem = error is Api.Offline ? new(OfflineMessage(action), Offline: true) : new(error.Message);
     }
@@ -1939,6 +1941,7 @@ public sealed class AppModel : ObservableObject
         }
         catch (Exception e)
         {
+            Platform.Log.Write("problems", $"sync failed: {e.GetType().Name}: {e.Message}");
             Offline = e is Api.Offline;  // the next sync tries again
             SyncError = Offline ? null : (e as Api.Failure)?.Reason ?? "It tries again shortly.";
         }
@@ -1989,8 +1992,9 @@ public sealed class AppModel : ObservableObject
             if (SignedOutMeanwhile()) return;
             recording = recording with { State = RecordingState.Sent, Error = null };
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Platform.Log.Write("problems", $"sending {recording.Id} failed: {e.GetType().Name}: {e.Message}");
             if (recording.State == RecordingState.Uploading) recording = recording with { State = RecordingState.Saved };
             // Signed in still: it tries again. Signed out meanwhile, nothing does until someone signs in.
             recording = recording with { Error = generation == this.generation ? "Couldn't send it yet. Tally tries again shortly." : null };

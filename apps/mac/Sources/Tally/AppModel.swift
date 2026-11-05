@@ -48,6 +48,8 @@ import UserNotifications
     var openMain: (() -> Void)?
     private let drawer = Drawer()
     private let callLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tally", category: "calls")  // /usr/bin/log show --predicate 'subsystem == "<bundle id>"'
+    // What the person was told, so whoever helps can see it afterwards: never what a meeting says
+    private let problemLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tally", category: "problems")
     private(set) var sendingCrash = false
     private(set) var syncError: String?  // the last sync failed for a reason other than being offline; cleared by the next that works
     private(set) var elapsed = ""  // the recording's time, for the menu bar: updated once a second
@@ -1324,9 +1326,13 @@ import UserNotifications
 
     /// Something the owner asked for that didn't happen, said plainly. Offline, it isn't kept for later: they ask again.
     private func report(_ error: Error, _ action: String) {
+        problemLog.error("couldn't \(action, privacy: .public): \(Self.described(error), privacy: .public)")
         if error is API.Offline { offline = true }
         problem = error is API.Offline ? Problem(message: offlineMessage(action), offline: true) : Problem(message: error.localizedDescription)
     }
+
+    /// An error for the log, as Windows logs it: its type and message.
+    nonisolated static func described(_ error: Error) -> String { "\(type(of: error)): \(error.localizedDescription)" }
 
     private func offlineMessage(_ action: String) -> String {
         "You're offline, so Tally couldn't \(action). Try again when you're back online."
@@ -1414,6 +1420,7 @@ import UserNotifications
             for meeting in fresh.prefix(10) where meeting.state == "ready" && results[meeting.meetingId] == nil { await load(meeting.meetingId) }
             Task { await keepMeetingsFolder() }  // its first fill can take minutes: never in the way of sending recordings
         } catch {
+            problemLog.error("sync failed: \(Self.described(error), privacy: .public)")
             offline = error is API.Offline  // the next sync tries again
             syncError = offline ? nil : (error as? API.Failure).flatMap(\.reason) ?? "It tries again shortly."
         }
@@ -1461,6 +1468,7 @@ import UserNotifications
             recording.state = .sent
             recording.error = nil
         } catch {
+            problemLog.error("sending \(recording.id, privacy: .public) failed: \(Self.described(error), privacy: .public)")
             if recording.state == .uploading { recording.state = .saved }
             // Signed in still: it tries again. Signed out meanwhile, nothing does until someone signs in.
             recording.error = generation == self.generation ? "Couldn't send it yet. Tally tries again shortly." : nil
