@@ -31,7 +31,7 @@ The apps record the microphone and everything the computer plays, and upload it.
 ## What you need
 
 - **An AWS account and a region** with Batch, G-type GPU instances, and Bedrock access to the model in `modelId`.
-- **GPU quota, asked for first,** since it can take a day: at least 32 vCPUs of "Running On-Demand G and VT instances" in Service Quotas (Batch may launch a g6.8xlarge when smaller types have no capacity).
+- **GPU quota, asked for first,** since it can take a day: "Running On-Demand G and VT instances" in Service Quotas, at least `gpu.maxVcpus` (64 in the example) beside any other G instances in the account. Batch's launches past the quota fail.
 - **A Hugging Face token.** Accept the terms of [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1), make a read token, and store it under the name in `hfTokenSecret`:
   ```
   aws secretsmanager create-secret --name tally/hf-token --secret-string "<token>" --region <region>
@@ -65,6 +65,8 @@ Every setting is in the example. The optional ones are off there (`null`, `false
 | `tags` | No | Tags on everything, beside `project=tally`, `{"team": "ops"}` |
 
 **Another region than eu-north-1:** change `region`, `modelId`'s prefix, `modelPrices`, `timezone` and `gpu.instanceTypes` (`aws ec2 describe-instance-type-offerings --region <region>` lists a region's types).
+
+**`gpu.maxVcpus`** caps the vCPUs of all the GPU instances together. One instance runs one meeting, so it decides how many meetings run at once, and which of `instanceTypes` Batch can fall back to when the cheapest has no capacity. `64` (the example's) runs up to sixteen 4-vCPU instances or four 16-vCPU ones, and costs nothing idle, since instances start only for waiting meetings. With `16`, one 16-vCPU instance takes it all, and meetings sent together wait in turn. With `4`, Batch keeps to the 4-vCPU types: on 31 October 2026 a meeting waited 37 minutes that way, while eu-north-1 had no g6.xlarge.
 
 **`gpu.warm`** keeps a GPU running, so a meeting starts within seconds instead of after a 6–7 minute cold start. `{"vcpus": 4}` keeps one always on; `{"vcpus": 4, "from": 7, "to": 21}` keeps one from 07:00 to 21:00, and adding `"days": "MON-FRI"` keeps it on weekdays only.
 
