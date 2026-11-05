@@ -182,7 +182,7 @@ Five tables, each keyed by `owner` (the token's `sub`) first.
 - **The meetings folder's state:** `~/Library/Application Support/Tally/meetings-folder/<sub>/`: `cache/<id>.json`, the meetings as sent, and `state.json`, `{"meetings": {"<meeting_id>": {"stamp": "...", "directory": "...", "rendered": "..."}}}`.
 - **Settings** (UserDefaults): `callMode` (`off` | `offer` | `auto`), `welcomed`, `meetingsFolder.<sub>`, `notFiled` (dismissed folder suggestions), `crashesSeenUntil`.
 - **Sign-in:** the refresh token, in the Keychain, under the app's bundle id.
-- **App settings:** `Tally.app/Contents/Resources/tally.json`.
+- **App settings:** `Tally.app/Contents/Resources/tally.json`, which `apps/mac/settings.sh` writes: `issuer`, `clientId`, the provider's `authorization`, `token` and `revocation` endpoints (`revocation` is null when its discovery document has none), `signInName`, `api`, `site`, `bundleId`, `region`, and `version` in a build from the install page.
 
 `local.json`, in both apps, for a recording on the computer:
 ```json

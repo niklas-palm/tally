@@ -13,4 +13,4 @@ discovery=$(curl -fsS "$(jq -r .Issuer <<<"$outputs")/.well-known/openid-configu
 jq -n --argjson o "$outputs" --argjson d "$discovery" --arg bundle "$(jq -r .bundleId <<<"$config")" \
   --arg name "$(jq -r '.auth.name // "Tally"' <<<"$config")" --arg region "$(jq -r .region <<<"$config")" \
   '{issuer: $o.Issuer, clientId: $o.ClientId, authorization: $d.authorization_endpoint, token: $d.token_endpoint,
-    signInName: $name, api: $o.ApiUrl, site: $o.SiteUrl, bundleId: $bundle, region: $region}'
+    revocation: $d.revocation_endpoint, signInName: $name, api: $o.ApiUrl, site: $o.SiteUrl, bundleId: $bundle, region: $region}'

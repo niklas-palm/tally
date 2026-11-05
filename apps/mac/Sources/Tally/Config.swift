@@ -6,6 +6,7 @@ import Foundation
 struct Config: Decodable {
     let authorization: URL  // the provider's authorization endpoint, where the sign-in sheet opens
     let token: URL  // and its token endpoint
+    let revocation: URL?  // and its revocation endpoint, if its discovery document has one
     let clientId: String
     let signInName: String  // what people know the sign-in by: "Sign In to <name>"
     let api: URL

@@ -91,6 +91,7 @@ public sealed class Auth : ObservableObject
 
     public void SignOut()
     {
+        if (refreshToken is { } token && config.Revocation is { } url) _ = Revoke(token, url);
         session++;
         refreshing = null;
         refreshToken = null;
@@ -137,6 +138,21 @@ public sealed class Auth : ObservableObject
         catch (Exception)
         {
             return null;  // offline: try again later
+        }
+    }
+
+    /// <summary>Ends the sign-in at the provider too (RFC 7009), so a copy of the token that outlives this PC's is worth
+    /// nothing. Offline, it's only forgotten here.</summary>
+    private async Task Revoke(string token, Uri url)
+    {
+        var form = new Dictionary<string, string> { ["token"] = token, ["client_id"] = config.ClientId };
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = new FormUrlEncodedContent(form) };
+        try
+        {
+            await Http.Send(http, request, Http.Answer);
+        }
+        catch (Api.Offline)
+        {
         }
     }
 

@@ -67,6 +67,10 @@ import Foundation
     }
 
     func signOut() {
+        if let refreshToken, let url = config.revocation {
+            let request = Self.revocation(of: refreshToken, at: url, clientId: config.clientId)
+            Task { _ = try? await URLSession.shared.data(for: request) }  // offline, it's only forgotten here
+        }
         session += 1
         refreshing = nil
         refreshToken = nil
@@ -75,6 +79,16 @@ import Foundation
         subject = nil
         Keychain.delete("refresh-token")
         state = .signedOut
+    }
+
+    /// Ends the sign-in at the provider too (RFC 7009), so a copy of the token that outlives this Mac's is worth nothing.
+    nonisolated static func revocation(of token: String, at url: URL, clientId: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        let encoded = { (value: String) in value.addingPercentEncoding(withAllowedCharacters: .alphanumerics)! }
+        request.httpBody = Data("token=\(encoded(token))&client_id=\(encoded(clientId))".utf8)
+        return request
     }
 
     /// A valid access token, renewed when it's about to expire. Nil when signed out, offline, or when the session

@@ -155,4 +155,36 @@ public class AuthTests
         Assert.True(auth.Expired);
         Assert.Empty(platform.Secrets);
     }
+
+    /// <summary>Signing out ends the sign-in at the provider, when it has a revocation endpoint; offline, or without one,
+    /// the token is only forgotten here.</summary>
+    [Fact]
+    public async Task Signing_out_revokes_the_refresh_token_at_the_provider()
+    {
+        const string revoke = "https://auth.test/revoke";
+        var cancel = TestContext.Current.CancellationToken;
+        platform.Secrets["refresh-token"] = "refresh-1"u8.ToArray();
+        http.On($"POST {revoke}", 200);
+        var auth = new Auth(Config with { Revocation = new Uri(revoke) }, platform, platform, new HttpClient(http));
+        auth.SignOut();
+        Assert.Equal(AuthState.SignedOut, auth.State);
+        Assert.Empty(platform.Secrets);
+        for (var i = 0; i < 100 && http.Requests.IsEmpty; i++) await Task.Delay(10, cancel);  // it doesn't wait for the answer
+        var sent = Assert.Single(http.Requests);
+        Assert.Equal($"POST {revoke}", sent.Route);
+        var form = HttpUtility.ParseQueryString(sent.Body);
+        Assert.Equal(("refresh-1", "tally"), (form["token"], form["client_id"]));
+
+        platform.Secrets["refresh-token"] = "refresh-1"u8.ToArray();
+        http.Offline = true;
+        new Auth(Config with { Revocation = new Uri(revoke) }, platform, platform, new HttpClient(http)).SignOut();  // offline: forgotten all the same
+        Assert.Empty(platform.Secrets);
+        for (var i = 0; i < 100 && http.Requests.Count < 2; i++) await Task.Delay(10, cancel);
+
+        platform.Secrets["refresh-token"] = "refresh-1"u8.ToArray();
+        http.Offline = false;
+        Make().SignOut();  // no endpoint: nothing sent
+        await Task.Delay(50, cancel);
+        Assert.Equal(2, http.Requests.Count);
+    }
 }

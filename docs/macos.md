@@ -56,7 +56,7 @@ Tally writes a CAF while recording, which a crash doesn't ruin, and encodes it t
 
 ## Signing in
 
-Sign-in is OIDC with PKCE, through `ASWebAuthenticationSession` and `tally://callback`. The refresh token is kept in the login keychain; the access token stays in memory. A refresh the provider refuses (`invalid_grant`) asks you to sign in again, and being offline just waits.
+Sign-in is OIDC with PKCE, through `ASWebAuthenticationSession` and `tally://callback`. The refresh token is kept in the login keychain; the access token stays in memory. A refresh the provider refuses (`invalid_grant`) asks you to sign in again, and being offline just waits. Sign Out revokes the refresh token at the provider's revocation endpoint, if it has one, without waiting for the answer; offline, the token is only forgotten.
 
 ## Recordings on the Mac
 

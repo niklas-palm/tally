@@ -88,6 +88,13 @@ private func person(_ id: String, _ name: String, role: String? = nil, company: 
     #expect(AppModel.described(API.Failure(code: 500, message: nil)) == "Failure: Something went wrong on Tally's side. Try again in a moment.")
 }
 
+/// Signing out ends the sign-in at the provider: the refresh token and the client, as a form (RFC 7009).
+@Test func signingOutRevokesTheRefreshToken() {
+    let request = Auth.revocation(of: "a/b+c", at: URL(string: "https://auth.test/revoke")!, clientId: "tally")
+    #expect(request.httpMethod == "POST" && request.url?.absoluteString == "https://auth.test/revoke")
+    #expect(request.httpBody.map { String(decoding: $0, as: UTF8.self) } == "token=a%2Fb%2Bc&client_id=tally")
+}
+
 @Test func theAccountIsNamedFromItsToken() {
     let claims = Data(#"{"sub":"x","name":"Ada Lovelace","email":"ada@example.com"}"#.utf8).base64EncodedString()
         .replacing("+", with: "-").replacing("/", with: "_").replacing("=", with: "")

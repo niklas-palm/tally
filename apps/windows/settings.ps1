@@ -20,7 +20,7 @@ $name = if ($config.auth -and $config.auth.name) { $config.auth.name } else { 'T
 New-Item (Split-Path $Out) -ItemType Directory -Force | Out-Null
 $json = [ordered]@{
     issuer = $outputs.Issuer; clientId = $outputs.ClientId
-    authorization = $discovery.authorization_endpoint; token = $discovery.token_endpoint
+    authorization = $discovery.authorization_endpoint; token = $discovery.token_endpoint; revocation = $discovery.revocation_endpoint
     signInName = $name; api = $outputs.ApiUrl; site = $outputs.SiteUrl; bundleId = $config.bundleId; region = $config.region
 } | ConvertTo-Json
 # Without a byte-order mark, which Windows PowerShell's Set-Content -Encoding UTF8 writes and Tally's JSON reader refuses

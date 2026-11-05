@@ -9,10 +9,11 @@ namespace Tally;
 /// </summary>
 /// <param name="Authorization">The provider's authorization endpoint, where the browser signs in.</param>
 /// <param name="Token">And its token endpoint.</param>
+/// <param name="Revocation">And its revocation endpoint, if its discovery document has one.</param>
 /// <param name="SignInName">What people know the sign-in by: "Sign In to &lt;name&gt;".</param>
 /// <param name="Site">The install page, where updates come from.</param>
 /// <param name="Version">This build's, from the install page; null for a build from the repository.</param>
-public sealed record Config(Uri Authorization, Uri Token, string ClientId, string SignInName, Uri Api, Uri? Site = null, string? Version = null)
+public sealed record Config(Uri Authorization, Uri Token, string ClientId, string SignInName, Uri Api, Uri? Site = null, string? Version = null, Uri? Revocation = null)
 {
     private static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 

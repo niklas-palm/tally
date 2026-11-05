@@ -68,7 +68,7 @@ Tally writes `recording.wav` while recording, its header updated every second so
 
 ## Signing in
 
-Sign-in opens the provider in the default browser, with PKCE and `tally://callback`. Windows starts a second Tally with the callback, which hands it to the running one. The refresh token is in Credential Manager as `Tally/refresh-token`.
+Sign-in opens the provider in the default browser, with PKCE and `tally://callback`. Windows starts a second Tally with the callback, which hands it to the running one. The refresh token is in Credential Manager as `Tally/refresh-token`. Sign Out revokes it at the provider, as on the Mac.
 
 ## Recordings on the PC
 
