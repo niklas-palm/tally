@@ -3,6 +3,7 @@
 import dataclasses
 import io
 import json
+import signal
 from pathlib import Path
 
 import numpy as np
@@ -190,6 +191,20 @@ def test_deleted_while_the_agent_runs_publishes_nothing(run):
     table, s3 = Table({"state": "queued"}), S3()
     store, calls = run(table, s3, agent=lambda: table.rows.clear())
     assert "published" not in calls and store.forgotten == [MEETING] and ROW not in table.rows
+
+
+def test_a_job_batch_stops_still_takes_back_what_it_wrote(run, monkeypatch):
+    handlers = {}
+    monkeypatch.setattr(job.signal, "signal", lambda number, handler: handlers.__setitem__(number, handler))
+    table, s3 = Table({"state": "queued"}), S3()
+
+    def deleted():  # the API deletes the row, then stops the job
+        table.rows.clear()
+        handlers[signal.SIGTERM](signal.SIGTERM, None)
+
+    store, calls = run(table, s3, agent=deleted)
+    assert "published" not in calls and "exit" not in calls and store.forgotten == [MEETING]
+    assert handlers[signal.SIGTERM] is signal.SIG_IGN  # a second signal can't cut the taking back short
 
 
 def test_a_failure_says_so_in_plain_words(run):

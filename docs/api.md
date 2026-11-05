@@ -63,7 +63,7 @@ A meeting still `uploading`, `queued` or `processing` after 3 hours (the job's l
 4. For a person (a new one is created, `edited: true`), the speaker's centroid from `work/embeddings.npz` is saved as a `user` voiceprint, if it's a sound one. A background voice keeps none.
 5. A person the agent brought in with this meeting, whom the owner says it wasn't, is deleted, unless anything else holds on to them.
 
-**Deleting a meeting** removes everything under its prefix, its row, its voiceprints, and the people it brought in whom nothing else holds on to. A job still running for it loses its claim and stops.
+**Deleting a meeting** removes everything under its prefix, its row, its voiceprints, and the people it brought in whom nothing else holds on to. A job processing it is stopped (Batch's `TerminateJob`), after everything else is deleted, and takes back anything it wrote meanwhile. A job that hasn't started yet finds the meeting gone and does nothing.
 
 **Editing a person:** a new name keeps the old one as an alias, so the agent still recognises it. `is_owner: true` takes it from anyone else. Every edit sets `edited: true`: such a person is never pruned, and the agent only fills in what they left empty.
 

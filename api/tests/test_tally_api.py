@@ -127,12 +127,16 @@ class FakeTable:
 class FakeBatch:
     def __init__(self):
         self.submitted = []
+        self.terminated = []
         self.fails = False
 
     def submit_job(self, jobName, jobQueue, jobDefinition, parameters):
         if self.fails:
             raise RuntimeError("throttled")
         self.submitted.append(parameters["key"])
+
+    def terminate_job(self, jobId, reason):
+        self.terminated.append(jobId)
 
     def list_jobs(self, jobQueue, jobStatus):
         return {"jobSummaryList": [{"jobId": "j"}] if jobStatus == "RUNNING" else []}
@@ -275,6 +279,18 @@ def test_deleting_a_meeting_takes_what_it_taught_with_it(aws):
     assert call("DELETE /meetings/{id}", id=MEETING)[1] == {"files": 3, "voiceprints": 1, "people": 1}
     assert set(aws["people"].items) == {(ME, "p_named"), (ME, "p_old")} and list(aws["voiceprints"].items) == [(ME, "v_2")]
     assert not aws["s3"].objects and not aws["meetings"].items
+
+
+def test_deleting_a_meeting_on_its_way_stops_its_job(aws):
+    aws["meetings"].put_item({"owner": ME, "meeting_id": MEETING, "state": "processing", "job_id": "job-1", "updated_at": api.now()})
+    call("DELETE /meetings/{id}", user=FRIEND, id=MEETING)  # someone else's job is never theirs to stop
+    assert not aws["batch"].terminated
+    call("DELETE /meetings/{id}", id=MEETING)
+    assert aws["batch"].terminated == ["job-1"] and not aws["meetings"].items
+    aws["meetings"].put_item({"owner": ME, "meeting_id": MEETING, "state": "processing", "job_id": "job-0",
+                              "updated_at": "2026-01-01T00:00:00+00:00"})  # a job that died silently long ago
+    call("DELETE /meetings/{id}", id=MEETING)
+    assert aws["batch"].terminated == ["job-1"]
 
 
 def test_editing_a_person_keeps_the_old_name_and_one_owner(aws):

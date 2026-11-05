@@ -266,8 +266,10 @@ def get_meeting(owner, params, _body) -> dict:
 
 def delete_meeting(owner, params, _body) -> dict:
     """The meeting and everything Tally learned from it: its files, the voiceprints it gave anyone, and the people
-    it alone brought in. A job still running for it notices and publishes nothing."""
+    it alone brought in. A job still running for it is stopped, or its GPU work would go on while its place under
+    ON_THEIR_WAY is free. That comes last: the job, told once the row is gone, takes back anything it wrote meanwhile."""
     meeting_id = params["id"]
+    row = meeting_of(owner, meeting_id)
     prints = mine(voiceprints, owner)
     removed = [v for v in prints if v["meeting_id"] == meeting_id]
     for v in removed:
@@ -283,6 +285,8 @@ def delete_meeting(owner, params, _body) -> dict:
         if keys:
             s3.delete_objects(Bucket=BUCKET, Delete={"Objects": keys, "Quiet": True})
             files += len(keys)
+    if row and summary_of(row)["state"] == "processing" and row.get("job_id"):
+        batch.terminate_job(jobId=row["job_id"], reason="The meeting was deleted")
     return {"files": files, "voiceprints": len(removed), "people": len(gone)}
 
 

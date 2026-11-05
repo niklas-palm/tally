@@ -3,7 +3,7 @@
 EventBridge starts it when `users/<owner>/meetings/<id>/audio.*` is uploaded; the owner is the signed-in person whose
 meeting it is, and only their people are matched and changed. The job claims the meeting's row in the meetings
 table (docs/api.md) and writes its progress there: a meeting deleted meanwhile, or sent again, isn't this job's any
-more, and the job stops without changing anything. It loads the owner's people, runs prepare, the agent and
+more, and the job stops without changing anything; so it does when Batch stops it (the API's delete does). It loads the owner's people, runs prepare, the agent and
 publish, and copies the meeting's directory back to S3. The log holds steps and timings only: no audio, transcript
 or voiceprint ever goes to it.
 """
@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import shutil
+import signal
 import sys
 import time
 from decimal import Decimal
@@ -38,7 +39,15 @@ log = logging.getLogger("tally")
 
 
 class Stopped(Exception):
-    """The meeting isn't this job's any more: deleted in the app, or sent again (another job has it)."""
+    """The meeting isn't this job's any more: deleted in the app, or sent again (another job has it); or Batch stopped
+    the job."""
+
+
+def stop(_signal, _frame) -> None:
+    """Batch stops a job with SIGTERM, and kills it 30 s later: time enough to take back what it wrote for a meeting
+    deleted meanwhile. Without a handler the signal does nothing to the container's first process, which this is."""
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)  # once: nothing interrupts the taking back
+    raise Stopped
 
 
 def main() -> None:
@@ -106,6 +115,7 @@ def main() -> None:
     path.mkdir(parents=True, exist_ok=True)
     metrics = []
     try:
+        signal.signal(signal.SIGTERM, stop)
         audio = ROOT / Path(key).name
         s3.download_file(settings.bucket, key, str(audio))
         meta = json.loads(s3.get_object(Bucket=settings.bucket, Key=f"{prefix}/meta.json")["Body"].read())

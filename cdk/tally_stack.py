@@ -231,6 +231,9 @@ class TallyStack(cdk.Stack):
         # A summary written again without background voices: the job, on its queue, and nothing else
         function.add_to_role_policy(iam.PolicyStatement(actions=["batch:SubmitJob"], resources=[queue.job_queue_arn, job.job_definition_arn,
                                                                                                 f"arn:aws:batch:{self.region}:{self.account}:job-definition/{job.job_definition_name}:*"]))
+        # A deleted meeting's job, stopped: Batch scopes TerminateJob to jobs, not to their queue, and the API stops only
+        # the job its owner's meeting row names
+        function.add_to_role_policy(iam.PolicyStatement(actions=["batch:TerminateJob"], resources=[f"arn:aws:batch:{self.region}:{self.account}:job/*"]))
         # The admin dashboard on the install page calls it from the browser: that one origin, reading only
         # ("Keycloak" is only the authorizer's id, from its first provider: a new id would replace the live one)
         api = apigw.HttpApi(self, "Api", default_authorizer=authorizers.HttpJwtAuthorizer(
