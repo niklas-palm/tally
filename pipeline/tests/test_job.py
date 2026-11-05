@@ -203,8 +203,17 @@ def test_a_job_batch_stops_still_takes_back_what_it_wrote(run, monkeypatch):
         handlers[signal.SIGTERM](signal.SIGTERM, None)
 
     store, calls = run(table, s3, agent=deleted)
-    assert "published" not in calls and "exit" not in calls and store.forgotten == [MEETING]
+    assert "published" not in calls and store.forgotten == [MEETING]
     assert handlers[signal.SIGTERM] is signal.SIG_IGN  # a second signal can't cut the taking back short
+
+
+def test_a_job_batch_stops_for_another_reason_leaves_its_meeting_to_a_retry(run, monkeypatch):
+    handlers = {}
+    monkeypatch.setattr(job.signal, "signal", lambda number, handler: handlers.__setitem__(number, handler))
+    table = Table({"state": "queued"})
+    store, calls = run(table, S3(), agent=lambda: handlers[signal.SIGTERM](signal.SIGTERM, None))  # its instance going away
+    row = table.rows[ROW]
+    assert calls["exit"] and (row["state"], row["job_id"]) == ("processing", "job-1") and "published" not in calls and not store.forgotten
 
 
 def test_a_failure_says_so_in_plain_words(run):
