@@ -1,6 +1,6 @@
 # macOS app
 
-The Mac app is in `apps/mac/`: a menu bar app with one window, for macOS Sequoia 15.6 or later. It builds with Swift 6.1 or later: on macOS 15, Software Update offers the Command Line Tools for Xcode 16.4 (Swift 6.1, the macOS 15 SDK), so what only macOS 26 has is built in with newer tools and used where it's there (`#if compiler(>=6.2)` and `#available`). It talks only to Tally's API ([api.md](api.md)) and the sign-in provider, and holds no AWS credentials.
+The Mac app is in `apps/mac/`: a menu bar app with one window, for macOS Sequoia 15.6 or later. It builds with Swift 6.2, the Command Line Tools for Xcode 26, which run on 15.6 and later; what only macOS 26 has is used where it's there (`#available`). It talks only to Tally's API ([api.md](api.md)) and the sign-in provider, and holds no AWS credentials.
 
 ## Building
 

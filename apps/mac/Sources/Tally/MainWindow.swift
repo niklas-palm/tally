@@ -38,11 +38,9 @@ struct MainWindow: View {
             .safeAreaInset(edge: .top) { banner }
             // Over what's shown, and only about it: as in Mail, the toolbar above each column acts on that column
             .toolbar {
-                #if compiler(>=6.2)  // the macOS 26 SDK's: macOS 15's Command Line Tools bring Swift 6.1 and the 15 SDK
                 if #available(macOS 26, *) {
                     ToolbarSpacer(.flexible)  // at the far end, by the search field, apart from Record over the list
                 }
-                #endif
                 if model.place == .people {
                     ToolbarItem {
                         Button { if let person = model.selectedPerson { model.editing = PersonForm(person) } } label: { Label("Edit", systemImage: "pencil") }
