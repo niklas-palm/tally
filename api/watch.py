@@ -27,9 +27,11 @@ def jobs(status: str) -> list[dict]:
 
 def handler(_event, _context) -> dict:
     now, every = time.time() * 1000, int(os.environ["TALLY_WATCH_MINUTES"]) * 60_000
-    waiting = [j["createdAt"] for status in WAITING for j in jobs(status)]
+    # A job Batch retries, its instance gone, waits again from when its last try stopped, not from when it was sent
+    waiting = [j.get("stoppedAt") or j["createdAt"] for status in WAITING for j in jobs(status)]
     minutes = round((now - min(waiting)) / 60_000, 1) if waiting else 0
-    failed = sum(1 for j in jobs("FAILED") if j.get("stoppedAt", 0) > now - every and DELETED not in (j.get("statusReason") or ""))
+    # A minute more than the schedule's interval, which isn't exact: a failure counted twice rings as once, one missed never
+    failed = sum(1 for j in jobs("FAILED") if j.get("stoppedAt", 0) > now - every - 60_000 and DELETED not in (j.get("statusReason") or ""))
     cloudwatch.put_metric_data(Namespace="Tally", MetricData=[
         {"MetricName": "WaitingMinutes", "Value": minutes, "Unit": "None"},
         {"MetricName": "FailedMeetings", "Value": failed, "Unit": "Count"}])
