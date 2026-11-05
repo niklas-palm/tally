@@ -138,11 +138,15 @@ final class Recorder {
         guard tap != kAudioObjectUnknown, let description = tapDescription else { return }
         let leftOut = AudioUsers.leftOut()
         guard Set(leftOut) != Set(description.processes) else { return }
+        let before = description.processes
         description.processes = leftOut
         var address = Self.address(kAudioTapPropertyDescription)
         var value = description
         let status = AudioObjectSetPropertyData(tap, &address, 0, nil, UInt32(MemoryLayout<CATapDescription>.size), &value)
-        if status != noErr { problemLog.error("couldn't update what the recording leaves out: \(status, privacy: .public)") }
+        if status != noErr {
+            description.processes = before  // as the tap still has it, so the next change tries again
+            problemLog.error("couldn't update what the recording leaves out: \(status, privacy: .public)")
+        }
     }
 
     private func startDevice() throws {
