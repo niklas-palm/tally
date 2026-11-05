@@ -49,7 +49,6 @@ class Terminated(Exception):
 def terminate(_signal, _frame) -> None:
     """Batch stops a job with SIGTERM, and kills it 30 s later: time enough to take back what it wrote for a meeting
     deleted meanwhile. Without a handler the signal does nothing to the container's first process, which this is."""
-    signal.signal(signal.SIGTERM, signal.SIG_IGN)  # once: nothing interrupts the taking back
     raise Terminated
 
 
@@ -99,6 +98,7 @@ def main() -> None:
     def forget() -> None:
         """A meeting deleted while this job wrote to it: take back what the job wrote after the app's delete. A
         meeting that's still there is left as it is."""
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # Batch's stop, landing now, mustn't cut it short
         if not gone():
             return
         for page in s3.get_paginator("list_objects_v2").paginate(Bucket=settings.bucket, Prefix=f"{prefix}/"):

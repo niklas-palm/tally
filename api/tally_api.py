@@ -285,7 +285,7 @@ def delete_meeting(owner, params, _body) -> dict:
         if keys:
             s3.delete_objects(Bucket=BUCKET, Delete={"Objects": keys, "Quiet": True})
             files += len(keys)
-    if row and summary_of(row)["state"] == "processing" and row.get("job_id"):
+    if row and summary_of(row)["state"] == "processing":
         batch.terminate_job(jobId=row["job_id"], reason="The meeting was deleted")
     return {"files": files, "voiceprints": len(removed), "people": len(gone)}
 

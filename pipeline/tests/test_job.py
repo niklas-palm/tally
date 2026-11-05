@@ -204,7 +204,7 @@ def test_a_job_batch_stops_still_takes_back_what_it_wrote(run, monkeypatch):
 
     store, calls = run(table, s3, agent=deleted)
     assert "published" not in calls and store.forgotten == [MEETING]
-    assert handlers[signal.SIGTERM] is signal.SIG_IGN  # a second signal can't cut the taking back short
+    assert handlers[signal.SIGTERM] is signal.SIG_IGN  # the taking back ignores a stop: one landing then can't cut it short
 
 
 def test_a_job_batch_stops_for_another_reason_leaves_its_meeting_to_a_retry(run, monkeypatch):
