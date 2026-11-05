@@ -83,7 +83,7 @@
   <code>curl -fsSL @SITE@/install.sh | bash</code>
   <button type="button">Copy</button>
 </div>
-<p class="small">Paste it into Terminal (in Applications → Utilities) and press Return. It needs macOS Tahoe (26) or later and your @SIGNIN@ account with access to Tally. After that, Tally keeps itself up to date: when there's a new version, its menu bar icon gets a dot, and <b>Update</b> in its menu installs it.</p>
+<p class="small">Paste it into Terminal (in Applications → Utilities) and press Return. It needs macOS Sequoia 15.6 or later and your @SIGNIN@ account with access to Tally. After that, Tally keeps itself up to date: when there's a new version, its menu bar icon gets a dot, and <b>Update</b> in its menu installs it.</p>
 
 </section>
 
@@ -106,7 +106,7 @@
 <h2>What the command does</h2>
 <p>Tally isn't in an app store, so your computer builds it from source. That's why there are no "unknown publisher" warnings. On a Mac, the command:</p>
 <ol>
-  <li>Checks for macOS 26, and installs Apple's Command Line Tools if they're missing. They bring Swift, and macOS shows its own dialog for them.</li>
+  <li>Checks for macOS 15.6 or later, and installs Apple's Command Line Tools if they're missing. They bring Swift, and macOS shows its own dialog for them.</li>
   <li>Downloads Tally's source (under 1 MB) and checks it against the checksum in the script.</li>
   <li>Creates a code-signing certificate called <b>Tally Local</b> in your login keychain, once. macOS keeps Tally's microphone and system-audio permissions from one version to the next because every build carries the same signature.</li>
   <li>Builds Tally, in a minute or two, puts it in Applications and opens it.</li>

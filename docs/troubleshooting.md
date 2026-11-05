@@ -25,9 +25,13 @@ xcode-select --install
 
 Xcode works too, once its licence is accepted (`sudo xcodebuild -license accept`).
 
-## “Tally needs Swift 6.2 or later”
+## “Tally needs Swift 6.1 or later”
 
-Your Command Line Tools are older than Xcode 26's. Reinstall them with the two commands above, click Install in the dialog, and run the install command again. If you use Xcode instead, update it to Xcode 26.
+Your Command Line Tools are older than Xcode 16.4's. Reinstall them with the two commands above, click Install in the dialog, and run the install command again. If you use Xcode instead, update it to Xcode 16.4 or later.
+
+## “Tally needs macOS Sequoia 15.6 or later”
+
+Update macOS in System Settings → General → Software Update, then run the install command again.
 
 ## “Building failed”
 

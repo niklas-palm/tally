@@ -44,7 +44,7 @@ enum Updates {
         }
     }
 
-    /// Why the last install failed, as the installer wrote it ("FAILED: Tally needs Swift 6.2 or later…"): only
+    /// Why the last install failed, as the installer wrote it ("FAILED: Tally needs Swift 6.1 or later…"): only
     /// from the last run in the log (each starts with "--- "), so an old failure isn't this one's.
     static func lastFailure(in text: String) -> String? {
         let lines = text.split(separator: "\n")

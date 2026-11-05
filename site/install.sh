@@ -31,9 +31,11 @@ run() {
 
 check_mac() {
   [ "$(uname -s)" = Darwin ] || fail "Tally is a Mac app."
-  local major
-  major=$(sw_vers -productVersion | cut -d. -f1)
-  [ "$major" -ge 26 ] || fail "Tally needs macOS Tahoe (26) or later; this Mac has $(sw_vers -productVersion)."
+  local version major minor
+  version=$(sw_vers -productVersion)
+  major=${version%%.*}; minor=$(echo "$version" | cut -s -d. -f2)
+  [ "$major" -gt 15 ] || { [ "$major" -eq 15 ] && [ "${minor:-0}" -ge 6 ]; } \
+    || fail "Tally needs macOS Sequoia 15.6 or later; this Mac has $version. Update macOS in System Settings, General, Software Update."
 }
 
 TOOLS=/Library/Developer/CommandLineTools
@@ -42,9 +44,9 @@ swift_version() {
   (xcrun swift --version 2>/dev/null || true) | sed -n 's/.*Swift version \([0-9]*\.[0-9]*\).*/\1/p' | head -1
 }
 
-new_enough() {  # Swift 6.2 or later: the version Package.swift asks for, and the macOS 26 SDK
+new_enough() {  # Swift 6.1 or later: the version Package.swift asks for, and what macOS 15's Software Update offers
   local major=${1%%.*} minor=${1#*.}
-  [ -n "$1" ] && { [ "$major" -gt 6 ] || { [ "$major" -eq 6 ] && [ "$minor" -ge 2 ]; }; }
+  [ -n "$1" ] && { [ "$major" -gt 6 ] || { [ "$major" -eq 6 ] && [ "$minor" -ge 1 ]; }; }
 }
 
 # The Command Line Tools bring Swift. Their installer is a dialog of its own, so this waits until it's done.
@@ -75,7 +77,7 @@ check_tools() {
       swift=$tools
     fi
   fi
-  new_enough "$swift" || fail "Tally needs Swift 6.2 or later (the Command Line Tools for Xcode 26), and this Mac has ${swift:-no working Swift}. Install the newest: run 'sudo rm -rf $TOOLS' and then 'xcode-select --install', click Install, and run this command again. With Xcode, accept its licence first: sudo xcodebuild -license accept"
+  new_enough "$swift" || fail "Tally needs Swift 6.1 or later (the Command Line Tools for Xcode 16.4 or later), and this Mac has ${swift:-no working Swift}. Install the newest: run 'sudo rm -rf $TOOLS' and then 'xcode-select --install', click Install, and run this command again. With Xcode, accept its licence first: sudo xcodebuild -license accept"
 }
 
 # Quitting Tally ends a recording in progress: an update waits until it has stopped.

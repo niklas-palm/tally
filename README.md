@@ -141,7 +141,7 @@ Measured on the maintainer's deployment in eu-north-1:
 
 ## Develop
 
-The Mac app builds on macOS 26 with the Command Line Tools, the Windows app on Windows 11 with the .NET 10 SDK.
+The Mac app builds on macOS 15.6 or later with the Command Line Tools, the Windows app on Windows 11 with the .NET 10 SDK.
 
 ```
 make test          # the pipeline's and the API's tests; no AWS
