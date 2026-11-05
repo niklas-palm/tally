@@ -46,6 +46,8 @@ In `apps/mac/Sources/Tally/`:
 | `Updates.swift`, `Crashes.swift` | Updates and crash reports |
 | `*View.swift`, `MainWindow.swift`, `Library.swift`, `Files.swift` | The views |
 
+**⌘Q closes the window, not Tally.** Tally lives in the menu bar, and a ⌘Q meant for another app would quit it without a word, missing the next call or ending a recording. **Quit Tally** is in the menu bar's panel (⌘Q there), its right-click menu, and the Tally menu without a shortcut.
+
 ## Recording
 
 Tally records the mic and everything the Mac plays into one 2-channel file: channel 1 is the mic, channel 2 the system. A Core Audio process tap takes the system audio, leaving Tally out. A private aggregate device puts the tap and the default input on one clock. The tap doesn't auto-start, or a quiet room would record nothing. When the input changes, the device is rebuilt and the file carries on.

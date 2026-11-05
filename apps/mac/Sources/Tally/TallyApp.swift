@@ -34,6 +34,12 @@ struct TallyApp: App {
         // The first launch opens the window, with a welcome; after that Tally starts in the menu bar only.
         .defaultLaunchBehavior(UserDefaults.standard.bool(forKey: "welcomed") ? .suppressed : .presented)
         .commands {
+            // ⌘Q closes the window, not Tally: it lives in the menu bar, and a ⌘Q meant for another app would quit it without
+            // a word, missing the next call or ending a recording. Quitting is here without the shortcut, and in the panel.
+            CommandGroup(replacing: .appTermination) {
+                Button("Close Window") { NSApp.keyWindow?.performClose(nil) }.keyboardShortcut("q")
+                Button(model.recorder == nil ? "Quit Tally" : "Stop and Quit") { NSApp.terminate(nil) }
+            }
             CommandGroup(after: .newItem) {
                 Button(model.recorder == nil ? "Start Recording" : "Stop Recording") { Task { await model.toggleRecording() } }
                     .keyboardShortcut("r")

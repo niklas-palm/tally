@@ -56,6 +56,8 @@ In `apps/windows/Tally/`:
 | `Tray/` | The icon, and the panels that stand on the taskbar |
 | `MainWindow.xaml(.cs)`, `Views/` | The window, the flyout and the drawer |
 
+**Closing the window keeps Tally running** in the notification area, as ⌘Q in the Mac's window does. **Quit Tally** is in the flyout and the icon's right-click menu.
+
 ## Recording
 
 The mic is the default capture device. The system audio is WASAPI process loopback of everything but Tally's own process tree, which needs no permission. So that a browser Tally starts isn't left out too, Tally opens links and files through Explorer.
