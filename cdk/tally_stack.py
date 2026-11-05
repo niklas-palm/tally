@@ -237,6 +237,9 @@ class TallyStack(cdk.Stack):
             "Keycloak", issuer, jwt_audience=[client_id]),
             cors_preflight=apigw.CorsPreflightOptions(allow_origins=[site_url], allow_methods=[apigw.CorsHttpMethod.GET],
                                                       allow_headers=["authorization"], max_age=cdk.Duration.hours(1)))
+        # API Gateway's own account limits, said rather than left out: a limit dropped from the template stays on the
+        # stage, unseen by a diff, as #12's 100 a second for everyone together did.
+        api.default_stage.node.default_child.add_property_override("DefaultRouteSettings", {"ThrottlingRateLimit": 10000, "ThrottlingBurstLimit": 5000})
         integration = integrations.HttpLambdaIntegration("Function", function)
         for route in ("GET /meetings", "PUT /meetings/{id}", "POST /meetings/{id}/uploaded", "GET /meetings/{id}", "DELETE /meetings/{id}",
                       "PUT /meetings/{id}/speakers/{speaker}", "PUT /meetings/{id}/summary", "DELETE /meetings/{id}/summary", "POST /meetings/{id}/summary/rewrite", "GET /people", "PATCH /people/{id}", "DELETE /people/{id}",
