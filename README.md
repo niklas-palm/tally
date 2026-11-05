@@ -60,13 +60,15 @@ Every setting is in the example. The optional ones are off there (`null`, `false
 | `modelPrices` | Yes | Dollars per million tokens, for the dashboard ("standard" rates for an `eu.` or `us.` profile, "global" for `global.`) |
 | `hfTokenSecret` | Yes | The Secrets Manager name of the Hugging Face token |
 | `sharedVoices` | No | `true` to match voices across everyone in your deployment (below) |
-| `crashEmail` | No | Who gets an email when an app sends a crash report, `"you@example.com"` |
+| `crashEmail` | No | Who gets an email when an app sends a crash report, and when an alarm rings (below), `"you@example.com"`. Without it, no alarms |
 | `gpu` | Yes | `instanceTypes` (single-GPU types Batch may launch) and `maxVcpus`; optional `warm` (below) |
 | `tags` | No | Tags on everything, beside `project=tally`, `{"team": "ops"}` |
 
 **Another region than eu-north-1:** change `region`, `modelId`'s prefix, `modelPrices`, `timezone` and `gpu.instanceTypes` (`aws ec2 describe-instance-type-offerings --region <region>` lists a region's types).
 
 **`gpu.warm`** keeps a GPU running, so a meeting starts within seconds instead of after a 6–7 minute cold start. `{"vcpus": 4}` keeps one always on; `{"vcpus": 4, "from": 7, "to": 21}` keeps one from 07:00 to 21:00, and adding `"days": "MON-FRI"` keeps it on weekdays only.
+
+**`crashEmail`** also gets Tally's alarms: the API answering errors (5xx), a recording whose GPU job couldn't be started, a meeting waiting 20 minutes or more for a GPU, and a meeting's job failing. Each alarm mails once when it starts and once when it's over. SNS mails a confirmation link first: click it, or nothing arrives. The 20 minutes is a guess (about three cold starts), not measured.
 
 **`sharedVoices`** also suggests matches among the people everyone else in your deployment has named. It shares biometric data of people who never used Tally: be sure you have a legal basis (in the EU, GDPR) and that your users know.
 

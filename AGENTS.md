@@ -9,7 +9,7 @@ How to change Tally's code. Tally turns a meeting recording into a transcript wi
 | `README.md`, `config.example.json` | Deploying your own Tally, and its settings (the real `config.json` is gitignored) |
 | `docs/` | The architecture and its choices, the API, stored data, the agent, the apps, troubleshooting |
 | `pipeline/` | The `tally` CLI, the agent harness and prompts, the Batch job, tests |
-| `api/` | The API's Lambda and its tests |
+| `api/` | The API's Lambda, the alarms' watch of the GPU queue (`watch.py`), and their tests |
 | `cdk/` | The CDK app (Python) |
 | `apps/mac/` | The Mac app (Swift, SwiftPM) |
 | `apps/windows/` | The Windows app (C#, WinUI 3): `Tally.Core` (plain .NET), its tests, and `Tally` |

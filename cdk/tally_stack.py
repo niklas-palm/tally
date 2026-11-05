@@ -6,7 +6,8 @@ keyed by the person's `sub`. The app uploads a recording to a presigned URL, and
 that upload starts the pipeline: S3 tells EventBridge, which submits a Batch job on an on-demand GPU instance,
 running the pipeline's image. CodeBuild builds that image, on x86, with the models baked in. Meetings, people,
 voiceprints, the owner's folders and who's used Tally live in five DynamoDB tables. The install page and the admin
-dashboard are a private bucket behind CloudFront, at config.json's `domain` when there is one.
+dashboard are a private bucket behind CloudFront, at config.json's `domain` when there is one. With config.json's
+`crashEmail`, alarms mail it when something breaks.
 """
 
 import json
@@ -20,6 +21,8 @@ from aws_cdk import aws_batch as batch
 from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
+from aws_cdk import aws_cloudwatch as cloudwatch
+from aws_cdk import aws_cloudwatch_actions as actions
 from aws_cdk import aws_codebuild as codebuild
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
@@ -44,6 +47,8 @@ from constructs import Construct
 
 PIPELINE = Path(__file__).parent.parent / "pipeline"
 API = Path(__file__).parent.parent / "api"
+WATCH_MINUTES = 5
+WAITED_MINUTES = 20  # a cold start is 6 to 7 minutes: three times that is AWS out of GPUs, or something stuck (a guess)
 
 
 class CertificateStack(cdk.Stack):
@@ -187,7 +192,7 @@ class TallyStack(cdk.Stack):
                              "AWS_REGION": self.region},
                 logging=ecs.LogDriver.aws_logs(stream_prefix="tally", log_group=log_group)))
 
-        events.Rule(self, "AudioUploaded", event_pattern=events.EventPattern(
+        uploaded = events.Rule(self, "AudioUploaded", event_pattern=events.EventPattern(
             source=["aws.s3"], detail_type=["Object Created"],
             detail={"bucket": {"name": [bucket.bucket_name]}, "object": {"key": events.Match.wildcard("users/*/meetings/*/audio.*")}}),
             targets=[targets.BatchJob(queue.job_queue_arn, queue, job.job_definition_arn, job, job_name="tally-meeting",
@@ -198,16 +203,17 @@ class TallyStack(cdk.Stack):
         issuer, client_id, admin_claim = self.sign_in(config.get("auth"), site_url)
 
         # Crash reports from people's Macs and PCs, sent with their say-so: kept, and emailed to config.json's crashEmail
-        # (SNS mails a confirmation link once).
-        crashes = sns.Topic(self, "Crashes", display_name="Tally crashes")
+        # (SNS mails a confirmation link once), as the alarms are.
+        crashes = sns.Topic(self, "Crashes", display_name="Tally")
         if email := config.get("crashEmail"):
             crashes.add_subscription(subscriptions.EmailSubscription(email))
 
+        code = lambda_.Code.from_asset(str(API), exclude=["tests", "__pycache__", ".pytest_cache"])  # the API's, and the alarms' watch
         # The API: every route needs the owner's token, for this client (its audience, or Cognito's client_id), and
         # the function reaches the meetings and the five tables.
         function = lambda_.Function(
             self, "ApiFunction", runtime=lambda_.Runtime.PYTHON_3_13, architecture=lambda_.Architecture.ARM_64,
-            handler="tally_api.handler", code=lambda_.Code.from_asset(str(API), exclude=["tests", "__pycache__", ".pytest_cache"]),
+            handler="tally_api.handler", code=code,
             memory_size=1024, timeout=cdk.Duration.seconds(29),  # search reads every meeting's files: more memory is more CPU
             environment={"TALLY_BUCKET": bucket.bucket_name, "TALLY_MEETINGS_TABLE": meetings.table_name,
                          "TALLY_PEOPLE_TABLE": people.table_name, "TALLY_VOICEPRINTS_TABLE": voiceprints.table_name,
@@ -245,6 +251,9 @@ class TallyStack(cdk.Stack):
                       "POST /crashes", "GET /admin/stats"):
             method, path = route.split(" ")
             api.add_routes(path=path, methods=[apigw.HttpMethod(method)], integration=integration)
+
+        if config.get("crashEmail"):
+            self.alarms(crashes, api, uploaded, queue, code)
 
         for name, value in {"ApiUrl": api.api_endpoint, "MeetingsTable": meetings.table_name, "BucketName": bucket.bucket_name, "Repository": repository.repository_uri, "ImageBuild": build.project_name,
                             "JobQueue": queue.job_queue_name, "JobDefinition": job.job_definition_name, "LogGroup": log_group.log_group_name,
@@ -320,3 +329,42 @@ class TallyStack(cdk.Stack):
                     input=json.dumps({"ComputeEnvironment": compute.compute_environment_arn, "ComputeResources": {"MinvCpus": minimum}}),
                     retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(maximum_retry_attempts=5)))
 
+
+    def alarms(self, topic: sns.Topic, api: apigw.HttpApi, uploaded: events.Rule, queue: batch.JobQueue, code: lambda_.Code) -> None:
+        """Whoever deploys hears when something breaks, before the people using it say so: the API answering 5xx (a
+        crash or a timeout is a 5xx too), a recording whose job couldn't be started, a meeting waiting long for a GPU
+        (AWS sold out, say), and a meeting's job failing. The last two are api/watch.py's metrics, so its own failing
+        rings too. Each alarm mails when it starts and when it's over."""
+        five = cdk.Duration.minutes(5)
+        self.alarm(topic, "ApiServerErrors", api.metric_server_error(period=five, statistic="Sum"), 1, "Tally's API answered 5xx: the API's log says which route failed")
+        # without it a recording waits, unsummarised, and nothing else says so: it never reaches the queue the watch reads
+        self.alarm(topic, "RecordingNotSent", cloudwatch.Metric(namespace="AWS/Events", metric_name="FailedInvocations", dimensions_map={"RuleName": uploaded.rule_name},
+                                                                period=five, statistic="Sum"), 1,
+                   "A recording arrived but its GPU job couldn't be started (the AudioUploaded rule's target failed): it waits, unsummarised")
+
+        watch = lambda_.Function(
+            self, "WatchFunction", runtime=lambda_.Runtime.PYTHON_3_13, architecture=lambda_.Architecture.ARM_64,
+            handler="watch.handler", code=code, timeout=cdk.Duration.seconds(60),
+            environment={"TALLY_JOB_QUEUE": queue.job_queue_arn, "TALLY_WATCH_MINUTES": str(WATCH_MINUTES)},
+            log_group=logs.LogGroup(self, "WatchLogs", retention=logs.RetentionDays.ONE_MONTH))
+        watch.add_to_role_policy(iam.PolicyStatement(actions=["batch:ListJobs"], resources=["*"]))  # ListJobs takes no resource
+        watch.add_to_role_policy(iam.PolicyStatement(actions=["cloudwatch:PutMetricData"], resources=["*"],
+                                                     conditions={"StringEquals": {"cloudwatch:namespace": "Tally"}}))
+        events.Rule(self, "Watch", schedule=events.Schedule.rate(cdk.Duration.minutes(WATCH_MINUTES)), targets=[targets.LambdaFunction(watch)])
+        # without it, the two alarms below hear nothing, which they take as all's well
+        self.alarm(topic, "WatchErrors", watch.metric_errors(period=five, statistic="Sum"), 1, "Tally's watch of the GPU queue failed: see its logs")
+        period = cdk.Duration.minutes(WATCH_MINUTES)
+        self.alarm(topic, "MeetingWaiting", cloudwatch.Metric(namespace="Tally", metric_name="WaitingMinutes", period=period, statistic="Maximum"),
+                   WAITED_MINUTES, f"A meeting has waited {WAITED_MINUTES} minutes or more for a GPU: AWS may be out of them, or gpu.maxVcpus is full")
+        self.alarm(topic, "MeetingFailed", cloudwatch.Metric(namespace="Tally", metric_name="FailedMeetings", period=period, statistic="Sum"),
+                   1, "A meeting's job failed: the admin dashboard lists it, and the job's log says why")
+
+    def alarm(self, topic: sns.Topic, name: str, metric: cloudwatch.IMetric, threshold: float, what: str) -> None:
+        """Rings when any of the last three periods reaches the threshold. API Gateway's 5xx arrive after the period
+        they're in is looked at, so one period alone may never ring for them; and one failure is one email, not one
+        each time it comes back within a quarter of an hour."""
+        made = metric.create_alarm(self, name, threshold=threshold, evaluation_periods=3, datapoints_to_alarm=1, alarm_description=what,
+                                   comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+                                   treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING)
+        made.add_alarm_action(actions.SnsAction(topic))
+        made.add_ok_action(actions.SnsAction(topic))

@@ -79,6 +79,7 @@ The summary refers to speakers by id (`{S2}`), never by name, and the app fills 
 - **Sign-in:** any OIDC provider in config's `auth`, or else a Cognito user pool whose people an admin adds.
 - **The site:** a private S3 bucket that only CloudFront reads, served with security headers: a content security policy, no framing, HSTS.
 - **AWS Batch:** one on-demand compute environment across two AZs, single-GPU instance types (config's `gpu.instanceTypes`), and an x86 image with the models baked in. Config's `gpu.warm` keeps none, one, or one in set hours and days.
+- **Alarms:** with config's `crashEmail`, CloudWatch alarms mail it through the crash reports' SNS topic: API 5xx, the upload rule failing to submit a job, a meeting waiting 20 minutes or more for a GPU, and a meeting's job failing. A small Lambda (`api/watch.py`) reads the queue every 5 minutes for the last two; its own errors ring too. Each alarm looks at 3 periods and rings on 1, because API Gateway's 5xx datapoints can arrive late.
 - **Network:** public subnets, no ingress, IMDSv2, and a firewall rule that gives the agent's shell no network.
 
 ## Why it's built this way
