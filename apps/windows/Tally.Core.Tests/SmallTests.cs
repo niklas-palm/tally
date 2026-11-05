@@ -109,4 +109,14 @@ public class SmallTests
         var at = DateTimeOffset.FromUnixTimeMilliseconds(1_793_000_000_123);
         Assert.Equal(at, Ulid.Date(Ulid.Make(at)));
     }
+
+    /// <summary>Spotify playing in a meeting isn't the meeting: its process tree is left out, else Tally's own.</summary>
+    [Fact]
+    public void A_media_player_is_left_out_of_the_recording_or_else_tally_itself()
+    {
+        var at = new DateTime(2026, 11, 4, 8, 0, 0);
+        Assert.Equal(42, MediaPlayers.LeftOut([("Teams", 7, at), ("chrome", 8, at)], own: 42));  // no player: Tally itself
+        Assert.Equal(100, MediaPlayers.LeftOut([("Spotify", 101, at.AddSeconds(2)), ("Spotify", 100, at), ("Teams", 7, at)], own: 42));  // its first process
+        Assert.Equal(200, MediaPlayers.LeftOut([("vlc", 300, at), ("spotify", 200, at)], own: 42));  // by the list's order, any case
+    }
 }

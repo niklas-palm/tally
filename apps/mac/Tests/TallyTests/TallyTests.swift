@@ -233,6 +233,17 @@ private func run(_ rules: inout CallRules, _ users: [AudioUser], for seconds: In
     #expect(AudioUsers.name(of: -1, bundleID: "com.example.nothing") == nil)
 }
 
+/// Spotify playing in a meeting isn't the meeting: media players, and their helpers, are left out; call apps and
+/// browsers never are, since their sound is the meeting.
+@Test func mediaPlayersAreLeftOutOfTheRecordingAndCallAppsNever() {
+    #expect(AudioUsers.isPlayer("com.spotify.client") && AudioUsers.isPlayer("com.spotify.client.helper"))
+    #expect(AudioUsers.isPlayer("com.apple.Music"))
+    for call in ["us.zoom.xos", "com.microsoft.teams2", "com.tinyspeck.slackmacgap", "com.google.Chrome", "com.apple.Safari", "com.apple.FaceTime"] {
+        #expect(!AudioUsers.isPlayer(call))
+    }
+    #expect(!AudioUsers.isPlayer("com.spotify.clientele"))  // only the app itself and what extends its id
+}
+
 /// Auto mode: what it starts by itself is kept only if it lasted 2 minutes.
 @Test func anAutoRecordingUnderTwoMinutesIsntKept() {
     let start = Date()

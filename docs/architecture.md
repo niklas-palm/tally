@@ -27,7 +27,7 @@ Everything runs in config's one region, except the site's certificate in us-east
 ## Recording
 
 The apps are described in [macos.md](macos.md) and [windows.md](windows.md).
-- **Capture:** all system audio except Tally's own, alongside the default mic. The Mac uses a Core Audio tap in a private aggregate device; Windows uses WASAPI process loopback. Both write on one clock.
+- **Capture:** all system audio except Tally's own and media players' (Spotify and the like: music isn't the meeting; on Windows one player at a time), alongside the default mic. The Mac uses a Core Audio tap in a private aggregate device; Windows uses WASAPI process loopback. Both write on one clock.
 - **The file:** one 2-channel 48 kHz `.m4a`, with the mic on channel 1 and system audio on channel 2. An in-person meeting's system channel is simply silent.
 - **There is no "mic = me".** The owner's voice is learned like anyone's. A speaker's mic/system energy ratio is only a clue to who is in the room.
 

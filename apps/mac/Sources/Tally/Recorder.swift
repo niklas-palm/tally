@@ -3,8 +3,9 @@ import AudioToolbox
 import CoreAudio
 import os
 
-/// Records a meeting: everything the Mac plays, through a global Core Audio process tap that leaves Tally itself out,
-/// and the default microphone, together in one private aggregate device so both run on one clock.
+/// Records a meeting: everything the Mac plays, through a global Core Audio process tap that leaves Tally itself and
+/// media players (Spotify, Music…: `AudioUsers.players`) out, and the default microphone, together in one private
+/// aggregate device so both run on one clock.
 ///
 /// Channel 1 of the file is the mic, channel 2 the system audio (docs/architecture.md). While recording it writes 16-bit PCM
 /// to a CAF, which a crash doesn't ruin the way it would an unfinished m4a; `encode` turns that into the m4a that is
@@ -33,6 +34,9 @@ final class Recorder {
     private var file: AVAudioFile?
     private var tap = AudioObjectID(kAudioObjectUnknown)
     private var tapUID = ""
+    private var tapDescription: CATapDescription?
+    private var processesListener: AudioObjectPropertyListenerBlock?
+    private let problemLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tally", category: "problems")
     private var aggregate = AudioObjectID(kAudioObjectUnknown)
     private var ioProc: AudioDeviceIOProcID?
     private var micChannels = 0
@@ -54,6 +58,11 @@ final class Recorder {
             var address = Self.address(kAudioHardwarePropertyDefaultInputDevice)
             AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, queue, listener)
             inputListener = listener
+            // A player started mid-meeting (or Tally's first clip) gets its process object as it starts playing
+            let processes: AudioObjectPropertyListenerBlock = { [weak self] _, _ in self?.updateTap() }
+            var list = Self.address(kAudioHardwarePropertyProcessObjectList)
+            AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &list, queue, processes)
+            processesListener = processes
         }
     }
 
@@ -81,9 +90,15 @@ final class Recorder {
                 AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, queue, inputListener)
             }
             inputListener = nil
+            if let processesListener {
+                var address = Self.address(kAudioHardwarePropertyProcessObjectList)
+                AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, queue, processesListener)
+            }
+            processesListener = nil
             stopDevice()
             if tap != kAudioObjectUnknown { AudioHardwareDestroyProcessTap(tap) }
             tap = AudioObjectID(kAudioObjectUnknown)
+            tapDescription = nil
             fileLock.withLock {
                 file?.close()
                 file = nil
@@ -109,22 +124,25 @@ final class Recorder {
     // MARK: - The tap and the aggregate device (on `queue`)
 
     private func createTap() throws {
-        // Leave Tally's own sound out (its clip player). Before it has played anything it has no process object.
-        var exclude: [AudioObjectID] = []
-        var pid = getpid()
-        var process = AudioObjectID(kAudioObjectUnknown)
-        var size = UInt32(MemoryLayout<AudioObjectID>.size)
-        var address = Self.address(kAudioHardwarePropertyTranslatePIDToProcessObject)
-        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address,
-                                   UInt32(MemoryLayout<pid_t>.size), &pid, &size, &process)
-        if process != kAudioObjectUnknown { exclude.append(process) }
-
-        let description = CATapDescription(stereoGlobalTapButExcludeProcesses: exclude)
+        let description = CATapDescription(stereoGlobalTapButExcludeProcesses: AudioUsers.leftOut())
         description.uuid = UUID()
         description.isPrivate = true
         description.muteBehavior = .unmuted
         try check(AudioHardwareCreateProcessTap(description, &tap), "start recording your Mac's sound")
         tapUID = description.uuid.uuidString
+        tapDescription = description
+    }
+
+    /// The tap's list of what's left out, when it changed: the tap carries on, so the recording isn't interrupted.
+    private func updateTap() {
+        guard tap != kAudioObjectUnknown, let description = tapDescription else { return }
+        let leftOut = AudioUsers.leftOut()
+        guard Set(leftOut) != Set(description.processes) else { return }
+        description.processes = leftOut
+        var address = Self.address(kAudioTapPropertyDescription)
+        var value = description
+        let status = AudioObjectSetPropertyData(tap, &address, 0, nil, UInt32(MemoryLayout<CATapDescription>.size), &value)
+        if status != noErr { problemLog.error("couldn't update what the recording leaves out: \(status, privacy: .public)") }
     }
 
     private func startDevice() throws {

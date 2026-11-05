@@ -3,6 +3,29 @@ using System.Text.Json.Serialization;
 
 namespace Tally;
 
+/// <summary>
+/// Media players, whose sound is the owner's music, not the meeting: the recording leaves one out (as the Mac leaves out
+/// its <c>AudioUsers.players</c>). Windows' process loopback leaves out only one process tree, so it's the first player
+/// running, by this list's order, or else Tally itself (its clip player). Never a call app or a browser.
+/// </summary>
+public static class MediaPlayers
+{
+    public static readonly string[] Names = ["Spotify", "AppleMusic", "iTunes", "vlc", "TIDAL", "Deezer"];
+
+    /// <summary>The process whose tree the recording leaves out, of these (name, id, started): a player's first
+    /// process, the one its others are children of, or else <paramref name="own"/>.</summary>
+    public static int LeftOut(IEnumerable<(string Name, int Id, DateTime Started)> processes, int own)
+    {
+        var running = processes.ToList();
+        foreach (var name in Names)
+        {
+            var first = running.Where(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)).OrderBy(p => p.Started).FirstOrDefault();
+            if (first.Name is not null) return first.Id;
+        }
+        return own;
+    }
+}
+
 public enum RecordingState
 {
     Recording,

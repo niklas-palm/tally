@@ -58,7 +58,7 @@ In `apps/windows/Tally/`:
 
 ## Recording
 
-The mic is the default capture device. The system audio is WASAPI process loopback of everything but Tally's own process tree, which needs no permission. So that a browser Tally starts isn't left out too, Tally opens links and files through Explorer.
+The mic is the default capture device. The system audio is WASAPI process loopback of everything but one process tree, which needs no permission: a media player's, when one is running (Spotify, Apple Music, iTunes, VLC, TIDAL, Deezer, in that order: `MediaPlayers` in Core), or else Tally's own. Windows leaves out only one, so with two players running the second is recorded, and while a player is left out, a clip Tally plays would be too. A player starting or quitting mid-meeting has the loopback opened again within a second, with a short gap in the system channel. So that a browser Tally starts isn't left out too, Tally opens links and files through Explorer.
 
 Loopback delivers nothing while nothing plays, so a writer thread keeps time by the wall clock, writing silence where a capture fell short. Channel 1 is the mic, channel 2 the system. When the default mic changes, the capture follows it.
 

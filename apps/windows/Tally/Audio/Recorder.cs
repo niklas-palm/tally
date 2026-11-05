@@ -7,9 +7,10 @@ using NAudio.Wave;
 namespace Tally;
 
 /// <summary>
-/// Records a meeting: the default microphone, and everything the PC plays except Tally itself (process loopback,
-/// excluding Tally's own process tree), together in one 2-channel file: channel 1 the mic, channel 2 the system
-/// audio (docs/architecture.md), as the Mac's Recorder does.
+/// Records a meeting: the default microphone, and everything the PC plays except a media player (Spotify, say) or else
+/// Tally itself (process loopback, excluding one process tree: <see cref="MediaPlayers"/>), together in one 2-channel
+/// file: channel 1 the mic, channel 2 the system audio (docs/architecture.md), as the Mac's Recorder does. A player
+/// starting or quitting mid-meeting has the loopback opened again, leaving out what it should then.
 ///
 /// The two captures run on their own device clocks, and the loopback delivers nothing while nothing plays. So a
 /// writer thread keeps time by the wall clock instead: every 20 ms it writes the frames that are due, taking each
@@ -41,6 +42,7 @@ internal sealed class Recorder : IRecorder
     private WasapiRecorder? micCapture, systemCapture;
     // Opened again at the next look: the mic when the default one changed (a headset), either when it stopped with an error
     private volatile bool reopenMic, reopenSystem;
+    private int leftOut;  // the process tree the loopback leaves out
     private WaveFileWriter? file;
     private Thread? writer;
     private volatile bool running, paused;
@@ -127,7 +129,7 @@ internal sealed class Recorder : IRecorder
                 try { OpenMic(); }
                 catch (Exception) when (!asked) { lock (gate) lost = true; }  // whatever it was, the next look tries again
             }
-            if (reopenSystem || systemCapture is null)
+            if (reopenSystem || systemCapture is null || LeftOut() != leftOut)
             {
                 Close(ref systemCapture);
                 reopenSystem = false;
@@ -161,10 +163,26 @@ internal sealed class Recorder : IRecorder
         lock (gate) lost = false;
     }
 
+    private static int LeftOut()
+    {
+        var running = new List<(string, int, DateTime)>();
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process)
+            {
+                if (!MediaPlayers.Names.Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase)) continue;
+                try { running.Add((process.ProcessName, process.Id, process.StartTime)); }
+                catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception) { }  // gone meanwhile
+            }
+        }
+        return MediaPlayers.LeftOut(running, Environment.ProcessId);
+    }
+
     private async Task OpenSystem()
     {
+        leftOut = LeftOut();
         var capture = await new WasapiRecorderBuilder()
-            .WithProcessLoopback((uint)Environment.ProcessId, ProcessLoopbackMode.ExcludeTargetProcessTree)
+            .WithProcessLoopback((uint)leftOut, ProcessLoopbackMode.ExcludeTargetProcessTree)
             .WithFormat(CaptureFormat)
             .BuildAsync().ConfigureAwait(false);
         systemCapture = Started(capture, system, () =>

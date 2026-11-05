@@ -135,6 +135,7 @@ Measured on the maintainer's deployment in eu-north-1:
 
 - English and Swedish only.
 - A recording stops at 4 hours.
+- Music from Spotify and other media players is left out of what the computer plays, but music from the speakers still reaches the microphone. On Windows only one player at a time is left out. A video in a browser tab is recorded, since a browser also carries calls.
 - Sign-in is tested with Keycloak and Cognito; Okta and Entra ID need scopes Tally doesn't ask for yet.
 - Windows' Smart App Control and organisations' app control block Tally, since it's built on the PC and unsigned ([troubleshooting](docs/troubleshooting.md#smart-app-control-or-app-control-blocks-tally)).
 - On a Mac, the keychain asks once after each install whether Tally may read its sign-in.

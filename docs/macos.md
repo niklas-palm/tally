@@ -48,7 +48,7 @@ In `apps/mac/Sources/Tally/`:
 
 ## Recording
 
-Tally records the mic and everything the Mac plays into one 2-channel file: channel 1 is the mic, channel 2 the system. A Core Audio process tap takes the system audio, leaving Tally out. A private aggregate device puts the tap and the default input on one clock. The tap doesn't auto-start, or a quiet room would record nothing. When the input changes, the device is rebuilt and the file carries on.
+Tally records the mic and everything the Mac plays into one 2-channel file: channel 1 is the mic, channel 2 the system. A Core Audio process tap takes the system audio, leaving out Tally and media players (Spotify, Music, Podcasts, TV, VLC, IINA, TIDAL, Deezer: `AudioUsers.players`), whose sound is the owner's music, not the meeting. A process can only be left out once it has played something, so the tap's list is updated whenever Core Audio's list of processes changes: a player started mid-meeting is left out as it starts, without interrupting the recording. A private aggregate device puts the tap and the default input on one clock. The tap doesn't auto-start, or a quiet room would record nothing. When the input changes, the device is rebuilt and the file carries on.
 
 Tally writes a CAF while recording, which a crash doesn't ruin, and encodes it to AAC (`audio.m4a`) on stop. A tap without permission records silence, so the menu shows both levels. A recording stops at 4 hours, the longest the pipeline summarises.
 

@@ -144,6 +144,20 @@ enum AudioUsers {
         return name
     }
 
+    /// Media players, by bundle id (a helper's extends its app's): their sound is the owner's music, not the meeting,
+    /// so the recording leaves it out (Recorder's tap). Never a call app or a browser, whose sound is the meeting.
+    static let players = ["com.spotify.client", "com.apple.Music", "com.apple.podcasts", "com.apple.TV", "org.videolan.vlc",
+                          "com.colliderli.iina", "com.tidal.desktop", "com.deezer.deezer-desktop"]
+
+    static func isPlayer(_ bundleID: String) -> Bool { players.contains { bundleID == $0 || bundleID.hasPrefix($0 + ".") } }
+
+    /// The process objects of what the recording leaves out now: media players, and Tally itself (its clip player).
+    /// A process has one only once it has played something, so the tap's list is kept current as they come.
+    static func leftOut() -> [AudioObjectID] {
+        let ownPID = getpid()
+        return processes().filter { isPlayer(bundleID($0)) || value($0, kAudioProcessPropertyPID) == ownPID }
+    }
+
     private static func bundleID(_ process: AudioObjectID) -> String {
         var address = AudioObjectPropertyAddress(mSelector: kAudioProcessPropertyBundleID, mScope: kAudioObjectPropertyScopeGlobal,
                                                  mElement: kAudioObjectPropertyElementMain)
