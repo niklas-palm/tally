@@ -21,12 +21,12 @@ New-Item (Split-Path $Log) -ItemType Directory -Force | Out-Null
 Add-Content $Log "--- $(Get-Date -Format o) installing $Version"
 # What decides whether Windows lets Tally run, as Windows reports it, so a stop below can be understood from the log alone.
 # Only cmdlets: PowerShell's constrained language, which app control can put it in, allows them.
+$sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
 try {
     $guard = Get-CimInstance -Namespace root\Microsoft\Windows\DeviceGuard -ClassName Win32_DeviceGuard -ErrorAction Stop
-    $smart = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
     Add-Content $Log ("Windows build $((Get-CimInstance Win32_OperatingSystem).BuildNumber); PowerShell $($PSVersionTable.PSVersion), " +
         "language $($ExecutionContext.SessionState.LanguageMode); app control for apps $($guard.UsermodeCodeIntegrityPolicyEnforcementStatus) " +
-        "(0 off, 1 audit, 2 enforced); Smart App Control $smart (0 off, 1 on, 2 evaluating)")
+        "(0 off, 1 audit, 2 enforced); Smart App Control $sac (0 off, 1 on, 2 evaluating)")
 }
 catch { Add-Content $Log "Couldn't read app control's state: $($_.Exception.Message)" }
 
@@ -52,7 +52,6 @@ try {
     # with it on, Windows would block Tally from opening (no "run anyway"). 1 is on, 2 evaluating (it may turn on later).
     # First: it's app control too, which may constrain PowerShell as below, and a home PC's owner can turn it off, where
     # an organisation's they can't
-    $sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
     if ($sac -eq 1) { Fail "Smart App Control is on, and it blocks apps built on this PC, as Tally is (Windows Security, App & browser control, Smart App Control settings)." }
     if ($sac -eq 2) { Say "Smart App Control is evaluating this PC: if it turns on, it will block Tally from opening" }
     # An organisation's app control (AppLocker, App Control for Business) blocks apps built on the PC, as Smart App Control
