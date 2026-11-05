@@ -104,8 +104,9 @@ class Store:
 
     def shared(self, mine: list[dict]) -> list[dict]:
         """Everyone else's named people with voiceprints their owner confirmed, from at least SHARED_SECONDS of clean
-        speech, for a deployment that shares voices (sharedVoices): one entry a name, with those voiceprints, leaving out names this owner already knows by voice
-        (`mine`, their own people). A meeting that names one makes them this owner's person when it's published."""
+        speech, for a deployment that shares voices (sharedVoices): one entry a name, with those voiceprints, leaving
+        out names this owner already knows by voice (`mine`, their own people). A meeting that names one makes them
+        this owner's person when it's published."""
         people_table, voiceprints_table = self.tables()
         others = {p["person_id"]: p for p in scan(people_table) if p["owner"] != self.owner}
         # a person of the owner's without a voice doesn't hide a colleague's: Tally couldn't recognise them otherwise
