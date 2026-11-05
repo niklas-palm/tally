@@ -1024,8 +1024,6 @@ import UserNotifications
             guard generation == self.generation else { return }
             files[meeting] = found
             fileErrors[meeting] = nil
-        } catch is API.Offline {
-            fileErrors[meeting] = nil  // the page says they show once Tally is back online
         } catch {
             guard generation == self.generation else { return }
             fileErrors[meeting] = error.localizedDescription  // the files already listed stay, as they were

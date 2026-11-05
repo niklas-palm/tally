@@ -1410,10 +1410,6 @@ public sealed class AppModel : ObservableObject
             Files = Files.SetItem(meeting, [.. found]);
             FileErrors = FileErrors.Remove(meeting);
         }
-        catch (Api.Offline)
-        {
-            FileErrors = FileErrors.Remove(meeting);  // the page says they show once Tally is back online
-        }
         catch (Exception e)
         {
             if (generation != this.generation) return;
