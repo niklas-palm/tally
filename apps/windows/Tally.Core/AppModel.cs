@@ -110,6 +110,9 @@ public sealed class AppModel : ObservableObject
     public ImmutableDictionary<string, ImmutableList<MeetingFile>> Files { get; private set => SetProperty(ref field, value); } =
         ImmutableDictionary<string, ImmutableList<MeetingFile>>.Empty;
 
+    /// <summary>Meetings whose files couldn't be listed, and why: said on the page, not as no files.</summary>
+    public ImmutableDictionary<string, string> FileErrors { get; private set => SetProperty(ref field, value); } = ImmutableDictionary<string, string>.Empty;
+
     /// <summary>How many files are on their way to each meeting.</summary>
     public ImmutableDictionary<string, int> AddingFiles { get; private set { if (SetProperty(ref field, value)) Notify(nameof(Items)); } } =
         ImmutableDictionary<string, int>.Empty;
@@ -1400,10 +1403,22 @@ public sealed class AppModel : ObservableObject
     {
         if (await Connect() is not { } api) return;  // the page says it's offline or signed out already
         var generation = this.generation;
-        IReadOnlyList<MeetingFile>? found = null;  // none: the page says they show once Tally can reach them
-        try { found = await api.Files(meeting); } catch (Exception) { }
-        if (generation != this.generation) return;
-        Files = found is null ? Files.Remove(meeting) : Files.SetItem(meeting, [.. found]);
+        try
+        {
+            var found = await api.Files(meeting);
+            if (generation != this.generation) return;
+            Files = Files.SetItem(meeting, [.. found]);
+            FileErrors = FileErrors.Remove(meeting);
+        }
+        catch (Api.Offline)
+        {
+            FileErrors = FileErrors.Remove(meeting);  // the page says they show once Tally is back online
+        }
+        catch (Exception e)
+        {
+            if (generation != this.generation) return;
+            FileErrors = FileErrors.SetItem(meeting, e.Message);  // the files already listed stay, as they were
+        }
     }
 
     private string Cached(MeetingFile file, string meeting) => System.IO.Path.Combine(FileCache, meeting, file.FileId, Tally.MeetingsFolder.FileName(file));
@@ -1800,6 +1815,7 @@ public sealed class AppModel : ObservableObject
         Summaries = Summaries.Clear();
         Drafts = Drafts.Clear();
         Files = Files.Clear();
+        FileErrors = FileErrors.Clear();
         NotFiled = [];
         try { Directory.Delete(FileCache, recursive: true); } catch (Exception) { }
         if (Selection is { } id && !Recordings.Any(r => r.Id == id)) Selection = null;  // a recording's page stays

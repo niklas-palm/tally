@@ -25,6 +25,7 @@ import UserNotifications
     private(set) var drafts: [String: Results.Summary] = [:]  // the owner's edits, before they're saved
     private(set) var savingSummary: Set<String> = []
     private(set) var files: [String: [API.File]] = [:]  // what the owner added to each meeting
+    private(set) var fileErrors: [String: String] = [:]  // meetings whose files couldn't be listed: said on the page, not as no files
     private(set) var addingFiles: [String: Int] = [:]  // how many are on their way to each
     private(set) var opening: Set<String> = []  // files being downloaded to show
     private var saves: [String: Int] = [:]  // saves and restores of each meeting's copy: a load from before one doesn't undo it
@@ -1018,9 +1019,17 @@ import UserNotifications
     func loadFiles(_ meeting: String) async {
         guard let api = await api() else { return }  // the page says it's offline or signed out already
         let generation = generation
-        let found = try? await api.files(of: meeting)  // none: the page says they show once Tally can reach them
-        guard generation == self.generation else { return }
-        files[meeting] = found
+        do {
+            let found = try await api.files(of: meeting)
+            guard generation == self.generation else { return }
+            files[meeting] = found
+            fileErrors[meeting] = nil
+        } catch is API.Offline {
+            fileErrors[meeting] = nil  // the page says they show once Tally is back online
+        } catch {
+            guard generation == self.generation else { return }
+            fileErrors[meeting] = error.localizedDescription  // the files already listed stay, as they were
+        }
     }
 
     private func cached(_ file: API.File, of meeting: String) -> URL {
@@ -1305,6 +1314,7 @@ import UserNotifications
         summaries = [:]
         drafts = [:]
         files = [:]
+        fileErrors = [:]
         notFiled = []
         try? FileManager.default.removeItem(at: Self.fileCache)
         if case .meeting(let id) = selection, !recordings.contains(where: { $0.id == id }) { selection = nil }  // a recording's page stays

@@ -113,7 +113,7 @@ internal sealed class MeetingView : Grid
         if (when is not null) when.Text = When(shown, results);
         summary?.Refresh(names);
         if (tab == Tab.Transcript) ShowTranscript(results, names);
-        if (name is nameof(AppModel.Files) or nameof(AppModel.AddingFiles) or nameof(AppModel.Opening) or nameof(AppModel.Offline) or "Auth") files?.Changed();
+        if (name is nameof(AppModel.Files) or nameof(AppModel.FileErrors) or nameof(AppModel.AddingFiles) or nameof(AppModel.Opening) or nameof(AppModel.Offline) or "Auth") files?.Changed();
         FilesLabel();
         Sections();
     }

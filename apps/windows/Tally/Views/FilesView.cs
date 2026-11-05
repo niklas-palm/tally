@@ -90,12 +90,15 @@ internal sealed class FilesView : UserControl
         ring.Visibility = adding.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
         adding.Text = count == 1 ? "Adding 1 file…" : $"Adding {count} files…";
         var loaded = model.Files.GetValueOrDefault(meeting);
-        var signature = string.Join("|", loaded?.Select(f => $"{f.FileId}{f.Url}{model.Opening.Contains(f.FileId)}") ?? ["none"]) + model.Offline + model.Auth.State;
+        var away = model.Offline || model.Auth.State != AuthState.SignedIn;  // said as such, before any older error
+        var failed = loaded is null && !away ? model.FileErrors.GetValueOrDefault(meeting) : null;  // couldn't be listed: not the same as none
+        var signature = string.Join("|", loaded?.Select(f => $"{f.FileId}{f.Url}{model.Opening.Contains(f.FileId)}") ?? ["none"]) + model.Offline + model.Auth.State + failed;
         if (signature == drawn) return;
         drawn = signature;
         if (loaded is not { Count: > 0 } files)
         {
-            body.Child = Ui.Placeholder(Ui.CopyGlyph, "No Files", loaded is null && (model.Offline || model.Auth.State != AuthState.SignedIn)
+            body.Child = failed is not null ? Ui.Placeholder(Ui.WarningGlyph, "Files Couldn't Be Shown", failed).With(p => p.MinHeight = 220)
+                : Ui.Placeholder(Ui.CopyGlyph, "No Files", loaded is null && away
                 ? model.Offline ? "Files already here show once you're back online." : "Sign in to see the files already here."
                 : "Keep slides, documents and screenshots with this meeting: drop them here, or paste them with Ctrl+V.").With(p => p.MinHeight = 220);
             return;

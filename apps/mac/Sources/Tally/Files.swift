@@ -30,12 +30,22 @@ struct FilesPage: View {
                 Button("Add Files…", systemImage: "plus") { choosing.wrappedValue = true }
             }
             if files.isEmpty {
+                let away = model.offline || model.auth.state != .signedIn  // said as such, before any older error
+                let failed = loaded == nil && !away ? model.fileErrors[meeting] : nil  // couldn't be listed: not the same as none
                 ContentUnavailableView {
-                    Label("No Files", systemImage: "doc.on.doc")
+                    if failed != nil {
+                        Label("Files Couldn't Be Shown", systemImage: "exclamationmark.triangle")
+                    } else {
+                        Label("No Files", systemImage: "doc.on.doc")
+                    }
                 } description: {
-                    Text(loaded == nil && (model.offline || model.auth.state != .signedIn)
-                         ? (model.offline ? "Files already here show once you're back online." : "Sign in to see the files already here.")
-                         : "Keep slides, documents and screenshots with this meeting: drop them here, or paste them with ⌘V.")
+                    if let failed {
+                        Text(failed)
+                    } else {
+                        Text(loaded == nil && away
+                             ? (model.offline ? "Files already here show once you're back online." : "Sign in to see the files already here.")
+                             : "Keep slides, documents and screenshots with this meeting: drop them here, or paste them with ⌘V.")
+                    }
                 }
                 .frame(minHeight: 200)
                 // the tint only while something's dragged over, as Finder shows a drop

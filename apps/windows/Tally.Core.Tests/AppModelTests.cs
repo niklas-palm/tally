@@ -436,6 +436,29 @@ public class AppModelTests : IDisposable
         Assert.Empty(model.Drafts);
     });
 
+    /// <summary>A files listing that fails isn't "No Files": the error is kept for the page, and the files already
+    /// listed stay.</summary>
+    [Fact]
+    public void A_files_listing_that_fails_says_so_and_keeps_the_files_already_listed() => UiThread.Run(async () =>
+    {
+        SignIn();
+        Ready();
+        var files = $"GET {FakeHttp.Api}/meetings/{Id}/files";
+        http.On(files, 500, """{"error": "something broke"}""");
+        var model = Model();
+        await model.Sync();
+        await model.LoadFiles(Id);
+        Assert.False(model.Files.ContainsKey(Id));
+        Assert.True(model.FileErrors.ContainsKey(Id));  // never listed: the page says it couldn't show them
+        WithSlides();
+        await model.LoadFiles(Id);
+        Assert.Single(model.Files[Id]);
+        Assert.False(model.FileErrors.ContainsKey(Id));
+        http.On(files, 500, """{"error": "something broke"}""");
+        await model.LoadFiles(Id);
+        Assert.Single(model.Files[Id]);  // still shown
+    });
+
     /// <summary>A full disk, or the longest a recording can be: the recording ends as Stop ends it, keeping what it has.</summary>
     [Fact]
     public void A_recorder_that_stops_by_itself_ends_the_recording_and_keeps_it() => UiThread.Run(async () =>
