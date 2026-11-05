@@ -21,6 +21,9 @@ TOP = 5  # people listed per speaker: the agent may pick a lower one when the me
 NO_MATCH = 0.5  # below it, a voice isn't a match at all (the prompt says so; measured: different people scored at most 0.49)
 LINE = 100  # a name, role or company: one printable line of at most this many characters, as the API allows
 SHARED = "shared:"  # a person from the organisation's pool (config.json's sharedVoices), by their id there
+# Clean speech a voiceprint needs to be shared: from 3 s, the same person reached 0.65 only 37% of the time, from 10 s
+# 76% (docs/architecture.md). A short one in the pool would be matched against everyone's meetings.
+SHARED_SECONDS = 10
 
 
 def line(text: str) -> str | None:
@@ -100,8 +103,8 @@ class Store:
         return list(people.values())
 
     def shared(self, mine: list[dict]) -> list[dict]:
-        """Everyone else's named people with voiceprints their owner confirmed, for a deployment that shares voices
-        (sharedVoices): one entry a name, with those voiceprints, leaving out names this owner already knows by voice
+        """Everyone else's named people with voiceprints their owner confirmed, from at least SHARED_SECONDS of clean
+        speech, for a deployment that shares voices (sharedVoices): one entry a name, with those voiceprints, leaving out names this owner already knows by voice
         (`mine`, their own people). A meeting that names one makes them this owner's person when it's published."""
         people_table, voiceprints_table = self.tables()
         others = {p["person_id"]: p for p in scan(people_table) if p["owner"] != self.owner}
@@ -111,7 +114,7 @@ class Store:
         for v in scan(voiceprints_table):
             person = others.get(v["person_id"])
             # only a voice its owner confirmed: an `auto` one may be the agent's mistake, and it would spread
-            if not person or person["owner"] != v["owner"] or v["source"] != "user":
+            if not person or person["owner"] != v["owner"] or v["source"] != "user" or float(v.get("quality", 0)) < SHARED_SECONDS:
                 continue
             # a colleague's name reaches other people's prompts: one that isn't one line is left out, whatever stored it
             name = line(person["name"])
