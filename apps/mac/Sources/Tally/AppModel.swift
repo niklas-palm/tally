@@ -1168,8 +1168,8 @@ import UserNotifications
 
     /// ⌘Z: the summary as it was; and ⇧⌘Z, registered as it undoes, the summary as it is now.
     private func undoable(_ meeting: String, back summary: Results.Summary, _ undo: UndoManager) {
-        undo.registerUndo(withTarget: self) { model in
-            guard let now = model.summary(of: meeting) else { return }
+        undo.registerUndo(withTarget: self) { [weak undo] model in  // weak: the manager keeps this, so this mustn't keep it
+            guard let undo, let now = model.summary(of: meeting) else { return }
             model.lastEdit[meeting] = nil
             model.edit(meeting) { $0 = summary }
             model.undoable(meeting, back: now, undo)

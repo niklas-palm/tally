@@ -1673,6 +1673,8 @@ public sealed class AppModel : ObservableObject
             editCount[meeting] = editCount.GetValueOrDefault(meeting) + 1;  // a save scheduled before this doesn't bring the copy back
             Drafts = Drafts.Remove(meeting);
             Summaries = Summaries.Remove(meeting);
+            undos.Remove(meeting);  // Ctrl+Z and Ctrl+Y mustn't bring back the copy just let go
+            redos.Remove(meeting);
             if (Results.GetValueOrDefault(meeting)?.Summary.Title is { } title) ChangeMeeting(meeting, m => m with { Title = title });
         }
         catch (Exception e)

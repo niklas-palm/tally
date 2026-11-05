@@ -404,6 +404,24 @@ public class AppModelTests : IDisposable
         Assert.Equal("Budget, agreed", model.SummaryOf(Id)!.Title);
     });
 
+    [Fact]
+    public void Restore_original_ends_undo_so_the_copy_let_go_never_comes_back() => UiThread.Run(async () =>
+    {
+        SignIn();
+        Ready();
+        http.On($"PUT {FakeHttp.Api}/meetings/{Id}/summary", 200);
+        http.On($"DELETE {FakeHttp.Api}/meetings/{Id}/summary", 200);
+        var model = Model();
+        await model.Sync();
+        model.Edit(Id, s => s with { Title = "Budget, agreed" });
+        await model.SaveSummary(Id, leaving: true);
+        model.Undo(Id);  // Redo now holds the copy
+        await model.RestoreSummary(Id);
+        model.Redo(Id);
+        Assert.NotEqual("Budget, agreed", model.SummaryOf(Id)!.Title);
+        Assert.Empty(model.Drafts);
+    });
+
     /// <summary>A full disk, or the longest a recording can be: the recording ends as Stop ends it, keeping what it has.</summary>
     [Fact]
     public void A_recorder_that_stops_by_itself_ends_the_recording_and_keeps_it() => UiThread.Run(async () =>

@@ -17,6 +17,7 @@ struct MeetingView: View {
         content.onDisappear {
             model.player.stop()  // leaving a meeting stops its clips
             Task { await model.saveSummary(item.id, leaving: true) }  // and saves what was typed, without waiting the second
+            undo?.removeAllActions(withTarget: model)  // the window's undo is shared: ⌘Z on the next meeting mustn't undo this one
         }
     }
 
@@ -94,7 +95,10 @@ struct MeetingView: View {
                         Button("Restore Original…") { restoring.wrappedValue = true }.buttonStyle(.link).foregroundStyle(.tint)  // a link looks like one
                     }
                     .confirmationDialog("Restore the original summary?", isPresented: restoring.projectedValue) {
-                        Button("Restore Original", role: .destructive) { Task { await model.restoreSummary(item.id) } }
+                        Button("Restore Original", role: .destructive) {
+                            undo?.removeAllActions(withTarget: model)  // ⌘Z mustn't bring back the copy just let go
+                            Task { await model.restoreSummary(item.id) }
+                        }
                     } message: {
                         Text("Your changes to this summary are deleted, and Tally's own summary is shown again.")
                     }
