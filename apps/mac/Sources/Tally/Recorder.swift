@@ -58,7 +58,7 @@ final class Recorder {
             var address = Self.address(kAudioHardwarePropertyDefaultInputDevice)
             AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, queue, listener)
             inputListener = listener
-            // A player started mid-meeting (or Tally's first clip) gets its process object as it starts playing
+            // A player started mid-meeting gets its process object as it starts playing
             let processes: AudioObjectPropertyListenerBlock = { [weak self] _, _ in self?.updateTap() }
             var list = Self.address(kAudioHardwarePropertyProcessObjectList)
             AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &list, queue, processes)

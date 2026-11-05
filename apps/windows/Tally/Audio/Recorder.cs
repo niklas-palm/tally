@@ -129,11 +129,12 @@ internal sealed class Recorder : IRecorder
                 try { OpenMic(); }
                 catch (Exception) when (!asked) { lock (gate) lost = true; }  // whatever it was, the next look tries again
             }
-            if (reopenSystem || systemCapture is null || LeftOut() != leftOut)
+            var target = LeftOut();
+            if (reopenSystem || systemCapture is null || target != leftOut)
             {
                 Close(ref systemCapture);
                 reopenSystem = false;
-                try { await OpenSystem().ConfigureAwait(false); }
+                try { await OpenSystem(target).ConfigureAwait(false); }
                 catch (Exception) when (!asked) { lock (gate) systemLost = true; }  // said, and the next look tries again
             }
         }
@@ -172,15 +173,15 @@ internal sealed class Recorder : IRecorder
             {
                 if (!MediaPlayers.Names.Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase)) continue;
                 try { running.Add((process.ProcessName, process.Id, process.StartTime)); }
-                catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception) { }  // gone meanwhile
+                catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception) { }  // gone meanwhile, or not ours to read: not left out
             }
         }
         return MediaPlayers.LeftOut(running, Environment.ProcessId);
     }
 
-    private async Task OpenSystem()
+    private async Task OpenSystem(int target)
     {
-        leftOut = LeftOut();
+        leftOut = target;
         var capture = await new WasapiRecorderBuilder()
             .WithProcessLoopback((uint)leftOut, ProcessLoopbackMode.ExcludeTargetProcessTree)
             .WithFormat(CaptureFormat)
