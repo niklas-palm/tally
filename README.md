@@ -120,6 +120,8 @@ With warm hours, a deploy that changes the GPU launch template resets the warm m
 aws batch update-compute-environment --compute-environment <environment> --compute-resources minvCpus=<gpu.warm.vcpus> --region <region>
 ```
 
+**If the account's Patch Manager installs patches and reboots** (a Quick Setup patch policy, say), it can restart a GPU instance in the middle of a meeting, a warm one most likely, since it runs for hours. Tally's GPU instances are disposable: Batch starts them for waiting meetings and ends them when there's nothing to do (but a warm one), so they aren't meant to be patched in place. They're tagged `project=tally`: leave them out of the patch policy by that tag, or patch them with "do not reboot". A reboot stops the job on the instance. Batch retries a job only when its instance is gone (a status reason starting `Host EC2`), and a reboot keeps the instance, so expect that meeting to fail. Within 3 hours the app shows it as failed, and its owner can send it again.
+
 ## Remove
 
 `cd cdk && npx -y aws-cdk@latest destroy --all` removes the stacks but keeps the data bucket, tables, KMS key, site bucket, image repository, Cognito pool and logs, so no meeting is lost by accident. Delete those by hand.
