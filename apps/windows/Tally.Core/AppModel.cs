@@ -1821,7 +1821,7 @@ public sealed class AppModel : ObservableObject
     /// <summary>Something the owner asked for that didn't happen, said plainly. Offline, it isn't kept for later: they ask again.</summary>
     private void Report(Exception error, string action)
     {
-        // What the person was told, in the log too, so whoever helps can see it afterwards: never what a meeting says
+        // What the person was told, in the log too, so whoever helps can see it afterwards
         Platform.Log.Write("problems", $"couldn't {action}: {error.GetType().Name}: {error.Message}");
         if (error is Api.Offline) Offline = true;
         Problem = error is Api.Offline ? new(OfflineMessage(action), Offline: true) : new(error.Message);
@@ -1941,7 +1941,7 @@ public sealed class AppModel : ObservableObject
         }
         catch (Exception e)
         {
-            Platform.Log.Write("problems", $"sync failed: {e.GetType().Name}: {e.Message}");
+            if (e is not Api.Offline) Platform.Log.Write("problems", $"sync failed: {e.GetType().Name}: {e.Message}");  // offline: every try
             Offline = e is Api.Offline;  // the next sync tries again
             SyncError = Offline ? null : (e as Api.Failure)?.Reason ?? "It tries again shortly.";
         }

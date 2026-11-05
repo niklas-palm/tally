@@ -82,7 +82,7 @@ private func person(_ id: String, _ name: String, role: String? = nil, company: 
     #expect(AppModel.status("processing", error: nil, local: .sent) == .processing)
 }
 
-/// A problem the person is told of is logged as its type and message, as on Windows: what failed, never a meeting's text.
+/// A problem the person is told of is logged as its type and message, as on Windows.
 @Test func aProblemIsLoggedAsItsTypeAndMessage() {
     #expect(AppModel.described(API.Offline()) == "Offline: You're offline.")
     #expect(AppModel.described(API.Failure(code: 500, message: nil)) == "Failure: Something went wrong on Tally's side. Try again in a moment.")

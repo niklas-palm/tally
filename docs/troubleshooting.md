@@ -82,9 +82,9 @@ Open it again: a recording that was running is recovered, and Tally offers to se
 
 ## Sending what happened
 
-Something went wrong that wasn't a crash? Tell the person who invited you what you did and roughly when, and send Tally's log. It has every problem Tally told you of, never what your meetings say.
+Something went wrong that wasn't a crash? Tell the person who invited you what you did and roughly when, and send Tally's log. It has the problems Tally showed you (a file's name at most), never what your meetings say.
 
-- **Mac:** `log show --last 1d --predicate 'subsystem == "<bundle id>"' > ~/Desktop/tally.log`, and send `tally.log`.
+- **Mac:** `log show --last 1d --predicate 'process == "Tally"' > ~/Desktop/tally.log`, and send `tally.log`.
 - **Windows:** send the files in `%LOCALAPPDATA%\Tally\Logs` (`tally.log`, and `install.log` for an install or an update).
 
 ## Start completely fresh

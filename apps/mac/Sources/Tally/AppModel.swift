@@ -48,7 +48,7 @@ import UserNotifications
     var openMain: (() -> Void)?
     private let drawer = Drawer()
     private let callLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tally", category: "calls")  // /usr/bin/log show --predicate 'subsystem == "<bundle id>"'
-    // What the person was told, so whoever helps can see it afterwards: never what a meeting says
+    // What the person was told, so whoever helps can see it afterwards
     private let problemLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tally", category: "problems")
     private(set) var sendingCrash = false
     private(set) var syncError: String?  // the last sync failed for a reason other than being offline; cleared by the next that works
@@ -1420,7 +1420,7 @@ import UserNotifications
             for meeting in fresh.prefix(10) where meeting.state == "ready" && results[meeting.meetingId] == nil { await load(meeting.meetingId) }
             Task { await keepMeetingsFolder() }  // its first fill can take minutes: never in the way of sending recordings
         } catch {
-            problemLog.error("sync failed: \(Self.described(error), privacy: .public)")
+            if !(error is API.Offline) { problemLog.error("sync failed: \(Self.described(error), privacy: .public)") }  // offline: every try
             offline = error is API.Offline  // the next sync tries again
             syncError = offline ? nil : (error as? API.Failure).flatMap(\.reason) ?? "It tries again shortly."
         }
