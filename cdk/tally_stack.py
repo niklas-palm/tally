@@ -335,11 +335,11 @@ class TallyStack(cdk.Stack):
         crash or a timeout is a 5xx too), a recording whose job couldn't be started, a meeting waiting long for a GPU
         (AWS sold out, say), and a meeting's job failing. The last two are api/watch.py's metrics, so its own failing
         rings too. Each alarm mails when it starts and when it's over."""
-        five = cdk.Duration.minutes(5)
-        self.alarm(topic, "ApiServerErrors", api.metric_server_error(period=five, statistic="Sum"), 1, "Tally's API answered 5xx: the API's log says which route failed")
+        period = cdk.Duration.minutes(WATCH_MINUTES)
+        self.alarm(topic, "ApiServerErrors", api.metric_server_error(period=period, statistic="Sum"), 1, "Tally's API answered 5xx: the API's log says which route failed")
         # without it a recording waits, unsummarised, and nothing else says so: it never reaches the queue the watch reads
-        self.alarm(topic, "RecordingNotSent", cloudwatch.Metric(namespace="AWS/Events", metric_name="FailedInvocations", dimensions_map={"RuleName": uploaded.rule_name},
-                                                                period=five, statistic="Sum"), 1,
+        self.alarm(topic, "JobNotStarted", cloudwatch.Metric(namespace="AWS/Events", metric_name="FailedInvocations", dimensions_map={"RuleName": uploaded.rule_name},
+                                                                period=period, statistic="Sum"), 1,
                    "A recording arrived but its GPU job couldn't be started (the AudioUploaded rule's target failed): it waits, unsummarised")
 
         watch = lambda_.Function(
@@ -352,8 +352,7 @@ class TallyStack(cdk.Stack):
                                                      conditions={"StringEquals": {"cloudwatch:namespace": "Tally"}}))
         events.Rule(self, "Watch", schedule=events.Schedule.rate(cdk.Duration.minutes(WATCH_MINUTES)), targets=[targets.LambdaFunction(watch)])
         # without it, the two alarms below hear nothing, which they take as all's well
-        self.alarm(topic, "WatchErrors", watch.metric_errors(period=five, statistic="Sum"), 1, "Tally's watch of the GPU queue failed: see its logs")
-        period = cdk.Duration.minutes(WATCH_MINUTES)
+        self.alarm(topic, "WatchErrors", watch.metric_errors(period=period, statistic="Sum"), 1, "Tally's watch of the GPU queue failed: see its logs")
         self.alarm(topic, "MeetingWaiting", cloudwatch.Metric(namespace="Tally", metric_name="WaitingMinutes", period=period, statistic="Maximum"),
                    WAITED_MINUTES, f"A meeting has waited {WAITED_MINUTES} minutes or more for a GPU: AWS may be out of them, or gpu.maxVcpus is full")
         self.alarm(topic, "MeetingFailed", cloudwatch.Metric(namespace="Tally", metric_name="FailedMeetings", period=period, statistic="Sum"),
