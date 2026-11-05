@@ -19,6 +19,16 @@ $exe = Join-Path $Programs 'Tally.exe'
 $closed = $false
 New-Item (Split-Path $Log) -ItemType Directory -Force | Out-Null
 Add-Content $Log "--- $(Get-Date -Format o) installing $Version"
+# What decides whether Windows lets Tally run, as Windows reports it, so a stop below can be understood from the log alone.
+# Only cmdlets: PowerShell's constrained language, which app control can put it in, allows them.
+try {
+    $guard = Get-CimInstance -Namespace root\Microsoft\Windows\DeviceGuard -ClassName Win32_DeviceGuard -ErrorAction Stop
+    $smart = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
+    Add-Content $Log ("Windows build $((Get-CimInstance Win32_OperatingSystem).BuildNumber); PowerShell $($PSVersionTable.PSVersion), " +
+        "language $($ExecutionContext.SessionState.LanguageMode); app control for apps $($guard.UsermodeCodeIntegrityPolicyEnforcementStatus) " +
+        "(0 off, 1 audit, 2 enforced); Smart App Control $smart (0 off, 1 on, 2 evaluating)")
+}
+catch { Add-Content $Log "Couldn't read app control's state: $($_.Exception.Message)" }
 
 function Say($text) { Write-Host "==> $text" -ForegroundColor White; Add-Content $Log "==> $text" }
 # Caught at the end and said plainly: run as `irm … | iex`, exit would close the person's own window before they read why
@@ -38,19 +48,21 @@ function Run($what, [scriptblock]$step) {
 }
 
 try {
+    # Smart App Control runs only signed code, or code Microsoft's cloud already knows: a Tally built here is neither, so
+    # with it on, Windows would block Tally from opening (no "run anyway"). 1 is on, 2 evaluating (it may turn on later).
+    # First: it's app control too, which may constrain PowerShell as below, and a home PC's owner can turn it off, where
+    # an organisation's they can't
+    $sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
+    if ($sac -eq 1) { Fail "Smart App Control is on, and it blocks apps built on this PC, as Tally is (Windows Security, App & browser control, Smart App Control settings)." }
+    if ($sac -eq 2) { Say "Smart App Control is evaluating this PC: if it turns on, it will block Tally from opening" }
     # An organisation's app control (AppLocker, App Control for Business) blocks apps built on the PC, as Smart App Control
     # does. Where it covers scripts, it also puts PowerShell in a constrained language the rest of this can't run in:
-    # checked first
+    # checked before anything that needs more than cmdlets
     if ($ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') {
         Fail "This PC's organisation runs app control (AppLocker or App Control for Business), which blocks apps built on the PC, as Tally is. Ask whoever manages it."
     }
     $build = [Environment]::OSVersion.Version.Build
     if ($build -lt 22000) { Fail "Tally needs Windows 11; this PC has build $build." }
-    # Smart App Control runs only signed code, or code Microsoft's cloud already knows: a Tally built here is neither, so
-    # with it on, Windows would block Tally from opening (no "run anyway"). 1 is on, 2 evaluating (it may turn on later).
-    $sac = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
-    if ($sac -eq 1) { Fail "Smart App Control is on, and it blocks apps built on this PC, as Tally is (Windows Security, App & browser control, Smart App Control settings)." }
-    if ($sac -eq 2) { Say "Smart App Control is evaluating this PC: if it turns on, it will block Tally from opening" }
     # The runtime and the project's platform for this PC's processor
     $arch, $platform = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64', 'ARM64' } else { 'x64', 'x64' }
 

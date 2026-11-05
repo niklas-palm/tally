@@ -113,6 +113,8 @@ Tally is built on your PC, so it isn't signed, and Windows can block it.
 
 A signed build of Tally, which doesn't exist yet, would fix both.
 
+Each install starts its part of `%LOCALAPPDATA%\Tally\Logs\install.log` with what Windows reports: the build, PowerShell's version and language mode, app control's enforcement for apps (0 off, 1 audit, 2 enforced) and Smart App Control's state (0 off, 1 on, 2 evaluating). The installer checks Smart App Control first, so with it on you're told to turn it off, not to ask an organisation.
+
 ### “The build failed” or “Installing the .NET SDK failed”
 
 The log has the errors. Usually a download was cut short, so run the install command again. A proxy that blocks `dot.net`, `builds.dotnet.microsoft.com` or `nuget.org` stops the install: ask whoever runs your network.
